@@ -32,59 +32,45 @@ class Asssignee(BaseModel):
     color: str = None
     username: str = None
     initials: str = None
-
     profilePicture: str = None
 
 
 class ListFolder(BaseModel):
     id: str
     name: str
-
     hidden: Optional[bool]
+    access: bool
 
+
+class ListSpace(BaseModel):
+    id: str
+    name: str
     access: bool
 
 
 class SingleList(BaseModel):
     id: str = None
     name: str = None
-
     deleted: bool = None
-
     archived: bool = None
-
     orderindex: int = None
-
     override_statuses: bool = None
-
     priority: Optional[Priority] = None
-
-    assignee: Asssignee = None
-    due_date: str = None
-    start_date: str = None
-
+    assignee: Optional[Asssignee] = None
+    due_date: Optional[str] = None
+    start_date: Optional[str] = None
     folder: ListFolder = None
-
-    space: ListFolder = None
-
+    space: ListSpace = None
     statuses: Optional[List[StatusElement]] = None
-
     inbound_address: str = None
-
     permission_level: str = None
-
     content: Optional[str] = None
-
     status: Optional[Status] = None
-
     task_count: Optional[int] = None
-
     start_date_time: Optional[str] = None
-
     due_date_time: Optional[bool] = None
 
     # return a single list
-
     def build_list(self):
         return SingleList(**self)
 
