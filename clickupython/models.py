@@ -163,7 +163,7 @@ class User(BaseModel):
 
 
 class AssignedBy(BaseModel):
-    id: str = None
+    id: int = None
     username: str = None
     initials: str = None
     email: str = None
@@ -171,8 +171,67 @@ class AssignedBy(BaseModel):
     profile_picture: str = None
 
 
+class CommentCommentType(enum.Enum):
+    IMAGE = "image"
+    ATTACHMENT = "attachment"
+    TAG = "tag"
+
+
+class CommentCommentImage(BaseModel):
+    id: str
+    name: str
+    title: str
+    type: str
+    extension: str
+    thumbnail_large: str
+    thumbnail_medium: str
+    thumbnail_small: str
+    url: str
+    uploaded: bool
+
+
+class CommentCommentAttachment(BaseModel):
+    id: str
+    date: str
+    title: str
+    type: int
+    source: int
+    version: int
+    extension: str
+    thumbnail_small: str
+    thumbnail_medium: str
+    thumbnail_large: str
+    is_folder: Optional[bool]
+    mimetype: str
+    hidden: bool
+    parent_id: str
+    size: int
+    total_comments: int
+    resolved_comments: int
+    user: User
+    deleted: bool
+    orientation: Optional[int]
+    url: str
+    parent_comment_type: int
+    parent_comment_parent: str
+    email_data: Optional[dict]
+    workspace_id: int
+    url_w_query: str
+    url_w_host: str
+
+
+class CommentCommentTaskMention(BaseModel):
+    task_id: str
+
+
 class CommentComment(BaseModel):
-    text: str = None
+    text: str
+    type: CommentCommentType = None
+    image: CommentCommentImage = None
+    attachment: CommentCommentAttachment = None
+    user: User = None
+    task_mention: CommentCommentTaskMention = None
+    attributes: dict
 
 
 class Comment(BaseModel):
@@ -181,11 +240,12 @@ class Comment(BaseModel):
     comment_text: str = None
     user: AssignedBy = None
     resolved: bool = None
-    assignee: AssignedBy = None
+    assignee: Optional[AssignedBy] = None
     assigned_by: AssignedBy = None
     reactions: List[Any] = None
     date: str = None
     hist_id: str = None
+    reply_count: int = None
 
     def build_comment(self):
         return Comment(**self)

@@ -1,19 +1,18 @@
-import requests
-import urllib
-import urllib.parse
-from urllib.parse import urlparse
-import os
 import json
 import ntpath
-from typing import List, Optional
-from time import sleep
+import os
+import urllib
+import urllib.parse
 from datetime import datetime
+from time import sleep
+from typing import List, Optional
 
-from clickupython.helpers.timefuncs import fuzzy_time_to_seconds, fuzzy_time_to_unix
-from clickupython.helpers import formatting
-from clickupython import models
+import requests
+
 from clickupython import exceptions
-
+from clickupython import models
+from clickupython.helpers import formatting
+from clickupython.helpers.timefuncs import fuzzy_time_to_unix
 
 API_URL = "https://api.clickup.com/api/v2/"
 
@@ -868,11 +867,29 @@ class ClickUpClient:
             query["start_id"] = start_from_id
         path = [
             view_id,
-            "comment/"
+            "comment/",
         ]
         if len(query) > 0:
-            path = '?' + urllib.parse.urlencode(query)
+            path += '?' + urllib.parse.urlencode(query)
         fetched_comments = self.__get_request(model, *path)
+        final_comments = models.Comments.build_comments(fetched_comments)
+        if final_comments:
+            return final_comments
+
+    def get_threaded_comments(
+            self,
+            comment_id: str,
+    ) -> models.Comments:
+        """Get all the comments for a chat from a given view id.
+
+        Args:
+            :view_id (str): The id of the view to retrieve comments from.
+
+        Returns:
+            :models.Comments: Returns an object of type Comments.
+        """
+        model = "comment/"
+        fetched_comments = self.__get_request(model, comment_id, 'reply')
         final_comments = models.Comments.build_comments(fetched_comments)
         if final_comments:
             return final_comments
