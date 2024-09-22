@@ -590,6 +590,8 @@ class ClickUpClient:
         date_created_lt: str = None,
         date_updated_gt: str = None,
         date_updated_lt: str = None,
+        custom_fields: List[models.CustomFieldFilter] = None,
+        custom_field: models.CustomFieldFilter = None,
     ) -> models.Tasks:
 
         """The maximum number of tasks returned in this response is 100. When you are paging this request, you should check list limit
@@ -667,6 +669,11 @@ class ClickUpClient:
             supplied_values.append(f"date_updated_lt={date_updated_lt}")
         if subtasks:
             supplied_values.append(f"subtasks=true")
+        if custom_field:
+            supplied_values.append(f"custom_field={custom_field.model_dump_json()}")
+        if custom_fields:
+            custom_fields_json = json.dumps([cf.model_dump(mode='json') for cf in custom_fields])
+            supplied_values.append(f"custom_fields={custom_fields_json}")
 
         joined_url = f"task?{'&'.join(supplied_values)}"
 
@@ -687,6 +694,7 @@ class ClickUpClient:
         due_date: str = None,
         start_date: str = None,
         notify_all: bool = True,
+        custom_fields: List[models.CreateTaskCustomField] = None,
     ) -> models.Task:
 
         """[summary]
@@ -715,6 +723,10 @@ class ClickUpClient:
             )
         if due_date:
             due_date = fuzzy_time_to_unix(due_date)
+        if notify_all:
+            notify_all = str(notify_all).lower()
+        if custom_fields:
+            custom_fields = [cf.model_dump(mode='json') for cf in custom_fields]
 
         arguments = {}
         arguments.update(vars())
@@ -834,7 +846,12 @@ class ClickUpClient:
         if final_comments:
             return final_comments
 
-    def get_chat_comments(self, view_id: str) -> models.Comments:
+    def get_chat_comments(
+            self,
+            view_id: str,
+            start_from: Optional[datetime] = None,
+            start_from_id: Optional[int] = None,
+    ) -> models.Comments:
         """Get all the comments for a chat from a given view id.
 
         Args:
@@ -844,8 +861,18 @@ class ClickUpClient:
             :models.Comments: Returns an object of type Comments.
         """
         model = "view/"
-        fetched_comments = self.__get_request(model, view_id, "comment/")
-        print(fetched_comments)
+        query = {}
+        if start_from:
+            query["start"] = start_from.timestamp()
+        if start_from_id:
+            query["start_id"] = start_from_id
+        path = [
+            view_id,
+            "comment/"
+        ]
+        if len(query) > 0:
+            path = '?' + urllib.parse.urlencode(query)
+        fetched_comments = self.__get_request(model, *path)
         final_comments = models.Comments.build_comments(fetched_comments)
         if final_comments:
             return final_comments
@@ -1541,3 +1568,18 @@ class ClickUpClient:
 
         if fetched_time_data:
             return models.TimeTrackingDataSingle.build_data(fetched_time_data)
+
+    def get_list_views(self, list_id: str) -> models.Views:
+        """Get all views attached to list via a list id.
+
+        Args:
+            :list_id (str): The id of the list to fetch views for.
+
+        Returns:
+            :models.Views: Returns an object of type Views.
+        """
+        model = "list/"
+        fetched_views = self.__get_request(model, list_id, "view")
+        if fetched_views:
+            return models.Views.build_views(fetched_views)
+

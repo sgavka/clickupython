@@ -1,8 +1,7 @@
-from typing import Optional, List, Any
+import enum
+from typing import Any, List, Optional, Union
 
-from pydantic import BaseModel, ValidationError, validator, Field
-
-import json
+from pydantic import BaseModel, Field, validator
 
 
 class Priority(BaseModel):
@@ -28,11 +27,11 @@ class StatusElement(BaseModel):
 
 
 class Asssignee(BaseModel):
-    id: str = None
+    id: int = None
     color: str = None
     username: str = None
     initials: str = None
-    profilePicture: str = None
+    profilePicture: Optional[str] = None
 
 
 class ListFolder(BaseModel):
@@ -51,6 +50,7 @@ class ListSpace(BaseModel):
 class SingleList(BaseModel):
     id: str = None
     name: str = None
+    full_name: str = None
     deleted: bool = None
     archived: bool = None
     orderindex: int = None
@@ -177,19 +177,12 @@ class CommentComment(BaseModel):
 
 class Comment(BaseModel):
     id: str = None
-
     comment: List[CommentComment] = None
-
     comment_text: str = None
-
     user: AssignedBy = None
-
     resolved: bool = None
-
     assignee: AssignedBy = None
-
     assigned_by: AssignedBy = None
-
     reactions: List[Any] = None
     date: str = None
     hist_id: str = None
@@ -226,17 +219,12 @@ class Option(BaseModel):
 
 
 class TypeConfig(BaseModel):
-    default: Optional[int]
-
-    placeholder: Optional[str]
-
-    new_drop_down: Optional[bool]
-
-    options: Optional[List[Option]]
-
-    include_guests: Optional[bool]
-
-    include_team_members: Optional[bool]
+    default: Optional[int] = None
+    placeholder: Optional[str] = None
+    new_drop_down: Optional[bool] = None
+    options: Optional[List[Option]] = None
+    include_guests: Optional[bool] = None
+    include_team_members: Optional[bool] = None
 
 
 class CustomItems:
@@ -266,7 +254,7 @@ class CustomField(BaseModel):
 
     value: Optional[Any] = None
 
-    required: bool = None
+    required: Optional[bool] = None
 
 
 class TimeTracking(BaseModel):
@@ -377,27 +365,39 @@ class Features(BaseModel):
 
     @validator("time_tracking", pre=True, always=True)
     def set_tt(cls, time_tracking):
-        return time_tracking or {"enabled": False}
+        return time_tracking or {
+            "enabled": False
+        }
 
     @validator("custom_fields", pre=True, always=True)
     def set_cf(cls, custom_fields):
-        return custom_fields or {"enabled": False}
+        return custom_fields or {
+            "enabled": False
+        }
 
     @validator("tags", pre=True, always=True)
     def set_tags(cls, tags):
-        return tags or {"enabled": False}
+        return tags or {
+            "enabled": False
+        }
 
     @validator("multiple_assignees", pre=True, always=True)
     def set_ma(cls, multiple_assignees):
-        return multiple_assignees or {"enabled": False}
+        return multiple_assignees or {
+            "enabled": False
+        }
 
     @validator("checklists", pre=True, always=True)
     def set_checklists(cls, checklists):
-        return checklists or {"enabled": False}
+        return checklists or {
+            "enabled": False
+        }
 
     @validator("portfolios", pre=True, always=True)
     def set_portfolios(cls, portfolios):
-        return portfolios or {"enabled": False}
+        return portfolios or {
+            "enabled": False
+        }
 
 
 class SpaceFeatures(BaseModel):
@@ -446,15 +446,33 @@ class SpaceFeatures(BaseModel):
                 "remap_due_dates": self.remap_due_dates,
                 "remap_closed_due_date": self.remap_closed_due_date,
             },
-            "time_tracking": {"enabled": self.time_tracking},
-            "tags": {"enabled": self.tags},
-            "time_estimates": {"enabled": self.time_estimates},
-            "checklists": {"enabled": self.checklists},
-            "custom_fields": {"enabled": self.custom_fields},
-            "remap_dependencies": {"enabled": self.remap_dependencies},
-            "dependency_warning": {"enabled": self.dependency_warning},
-            "portfolios": {"enabled": self.portfolios},
-            "milestones": {"enabled": self.milestones},
+            "time_tracking": {
+                "enabled": self.time_tracking
+            },
+            "tags": {
+                "enabled": self.tags
+            },
+            "time_estimates": {
+                "enabled": self.time_estimates
+            },
+            "checklists": {
+                "enabled": self.checklists
+            },
+            "custom_fields": {
+                "enabled": self.custom_fields
+            },
+            "remap_dependencies": {
+                "enabled": self.remap_dependencies
+            },
+            "dependency_warning": {
+                "enabled": self.dependency_warning
+            },
+            "portfolios": {
+                "enabled": self.portfolios
+            },
+            "milestones": {
+                "enabled": self.milestones
+            },
         }
 
 
@@ -578,7 +596,7 @@ class Task(BaseModel):
     start_date: Optional[str] = None
     time_estimate: Optional[str] = None
 
-    time_spent: Optional[str] = None
+    time_spent: Optional[int] = None
 
     custom_fields: Optional[List[CustomField]] = None
     list: Optional[ClickupList] = None
@@ -598,16 +616,16 @@ class Task(BaseModel):
         return client_instance.upload_attachment(self.id, file_path)
 
     def update(
-        self,
-        client_instance,
-        name: str = None,
-        description: str = None,
-        status: str = None,
-        priority: Any = None,
-        time_estimate: int = None,
-        archived: bool = None,
-        add_assignees: List[str] = None,
-        remove_assignees: List[int] = None,
+            self,
+            client_instance,
+            name: str = None,
+            description: str = None,
+            status: str = None,
+            priority: Any = None,
+            time_estimate: int = None,
+            archived: bool = None,
+            add_assignees: List[str] = None,
+            remove_assignees: List[int] = None,
     ):
         return client_instance.update_task(
             self.id,
@@ -622,11 +640,11 @@ class Task(BaseModel):
         )
 
     def add_comment(
-        self,
-        client_instance,
-        comment_text: str,
-        assignee: str = None,
-        notify_all: bool = True,
+            self,
+            client_instance,
+            comment_text: str,
+            assignee: str = None,
+            notify_all: bool = True,
     ):
         return client_instance.create_task_comment(
             self.id, comment_text, assignee, notify_all
@@ -691,6 +709,137 @@ class Members(BaseModel):
 
     def build_members(self):
         return Members(**self)
+
+
+class ViewParentType(enum.Enum):
+    WORKSPACE = 7
+    SPACE = 4
+    FOLDER = 5
+    LIST = 6
+
+
+class ViewParent(BaseModel):
+    id: str
+    type: ViewParentType
+
+
+class ViewGroupingField(enum.Enum):
+    NONE = "none"
+    STATUS = "status"
+    PRIORITY = "priority"
+    ASSIGNEE = "assignee"
+    TAG = "tag"
+    DUE_DATE = "dueDate"
+
+
+class ViewGrouping(BaseModel):
+    field: ViewGroupingField
+    dir: Optional[int]
+    collapsed: list[str]
+    ignore: bool
+
+
+class ViewDivide(BaseModel):
+    field: Optional[str]
+    dir: Optional[int]
+    collapsed: list[str]
+
+
+class ViewSorting(BaseModel):
+    fields: list[str]
+
+
+class Operator(enum.Enum):
+    AND = "AND"
+    OR = "OR"
+
+
+class ViewFilters(BaseModel):
+    op: Operator
+    filters: Optional[list[str]] = None
+    search: Optional[str]
+    show_closed: bool
+
+
+class ViewColumns(BaseModel):
+    # todo: add model for field here
+    fields: list[dict]
+
+
+class ViewTeamSidebar(BaseModel):
+    assignees: list[str]
+    assigned_comments: bool
+    unassigned_tasks: bool
+
+
+class ViewSettingsShowSubtasks(enum.Enum):
+    SEPARATE = 1
+    EXPANDED = 2
+    COLLAPSED = 3
+
+
+class ViewSettings(BaseModel):
+    show_task_locations: bool
+    show_subtasks: ViewSettingsShowSubtasks
+    show_subtask_parent_names: bool
+    show_closed_subtasks: bool
+    show_assignees: bool
+    show_images: bool
+    collapse_empty_columns: Optional[str]
+    me_comments: bool
+    me_subtasks: bool
+    me_checklists: bool
+
+
+class View(BaseModel):
+    id: str
+    name: str
+    # todo: add enum: conversation, box,
+    type: str
+    parent: ViewParent
+    grouping: ViewGrouping
+    divide: ViewDivide
+    sorting: ViewSorting
+    filters: ViewFilters
+    columns: ViewColumns
+    team_sidebar: ViewTeamSidebar
+    settings: ViewSettings
+
+
+class ViewConversation(BaseModel):
+    id: str
+    name: str
+    # todo: add enum: conversation, box,
+    type: str
+    parent: ViewParent
+    date_created: int
+    creator: int
+    # todo: add enum: public,
+    visibility: str
+    protected: bool
+    protected_note: Optional[str]
+    protected_by: Optional[int]
+    date_protected: Optional[int]
+    orderindex: int
+
+
+class Views(BaseModel):
+    views: List[ViewConversation | View]
+
+    def __iter__(self):
+        return iter(self.views)
+
+    @staticmethod
+    def build_views(attributes: dict):
+        views = attributes.pop("views")
+        for i, view in enumerate(views):
+            if view["type"] == "conversation":
+                view = ViewConversation(**view)
+            else:
+                view = View(**view)
+            views[i] = view
+        attributes["views"] = views
+        return Views(**attributes)
 
 
 class Team(BaseModel):
@@ -849,3 +998,29 @@ class TimeTrackingDataSingle(BaseModel):
 
     def __iter__(self):
         return iter(self.data)
+
+
+class CustomFieldFilterOperator(enum.Enum):
+    EQUALS = "="
+    LESS_THAN = "<"
+    LESS_THAN_OR_EQUALS = "<="
+    GREATER_THAN = ">"
+    GREATER_THAN_OR_EQUALS = ">="
+    NOT_EQUALS = "!="
+    IS_NULL = "IS NULL"
+    IS_NOT_NULL = "IS NOT NULL"
+    RANGE = "RANGE"
+    ANY = "ANY"
+    NOT_ANY = "NOT ANY"
+    NOT_ALL = "NOT ALL"
+
+
+class CustomFieldFilter(BaseModel):
+    field_id: str
+    operator: CustomFieldFilterOperator
+    value: Union[str, int, list[int]]
+
+
+class CreateTaskCustomField(BaseModel):
+    id: str
+    value: Union[str, int]
