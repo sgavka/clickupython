@@ -141,13 +141,13 @@ class Attachment(BaseModel):
 
 
 class User(BaseModel):
-    id: str = None
+    id: Union[str, int] = None
     username: str = None
     initials: str = None
     email: str = None
     color: str = None
 
-    profilePicture: str = None
+    profilePicture: Optional[str] = None
 
     initials: Optional[str] = None
 
@@ -175,6 +175,7 @@ class CommentCommentType(enum.Enum):
     IMAGE = "image"
     ATTACHMENT = "attachment"
     TAG = "tag"
+    TASK_MENTION = "task_mention"
 
 
 class CommentCommentImage(BaseModel):
@@ -198,9 +199,9 @@ class CommentCommentAttachment(BaseModel):
     source: int
     version: int
     extension: str
-    thumbnail_small: str
-    thumbnail_medium: str
-    thumbnail_large: str
+    thumbnail_small: Optional[str]
+    thumbnail_medium: Optional[str]
+    thumbnail_large: Optional[str]
     is_folder: Optional[bool]
     mimetype: str
     hidden: bool
@@ -231,11 +232,11 @@ class CommentComment(BaseModel):
     attachment: CommentCommentAttachment = None
     user: User = None
     task_mention: CommentCommentTaskMention = None
-    attributes: dict
+    attributes: dict = None
 
 
 class Comment(BaseModel):
-    id: str = None
+    id: int = None
     comment: List[CommentComment] = None
     comment_text: str = None
     user: AssignedBy = None
@@ -243,7 +244,7 @@ class Comment(BaseModel):
     assignee: Optional[AssignedBy] = None
     assigned_by: AssignedBy = None
     reactions: List[Any] = None
-    date: str = None
+    date: int = None
     hist_id: str = None
     reply_count: int = None
 

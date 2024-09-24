@@ -894,6 +894,55 @@ class ClickUpClient:
         if final_comments:
             return final_comments
 
+    def create_threaded_comment(
+            self,
+            comment_id: int,
+            comment_text: Optional[str] = None,
+            comment: Optional[list[dict]] = None,
+            assignee: Optional[int] = None,
+            group_assignee: Optional[int] = None,
+            notify_all: Optional[bool] = True,
+    ) -> models.Comment:
+        """Create a comment on a chat via a given chat view id.
+
+        Args:
+            :comment_id (str): The id of the comment to reply to.
+            :comment_text (str): The text of the comment.
+            :comment (list[dict]): The text of the comment.
+            :assignee (str, optional): The id of a user to add as an assignee. Defaults to None.
+            :group_assignee (str, optional): The id of a group to add as an assignee. Defaults to None.
+            :notify_all (bool, optional): Notify all valid users of the comment's creation. Default to True.
+
+        Returns:
+            :models.Comment: Returns an object of type Comment.
+        """
+        if comment_text is None and comment is None:
+            raise exceptions.ClickupClientError(
+                "Either comment_text or comment must be supplied.", "No comment supplied"
+            )
+
+        data = {
+            "notify_all": notify_all,
+        }
+        if comment_text:
+            data["comment_text"] = comment_text
+        if comment:
+            data["comment"] = comment
+        if assignee:
+            data["assignee"] = assignee
+        if group_assignee:
+            data["group_assignee"] = group_assignee
+
+        model = "comment/"
+
+        created_comment = self.__post_request(
+            model, json.dumps(data), None, False, str(comment_id), "reply"
+        )
+
+        final_comment = models.Comment.build_comment(created_comment)
+        if final_comment:
+            return final_comment
+
     def update_comment(
         self,
         comment_id: str,
@@ -942,7 +991,8 @@ class ClickUpClient:
     def create_task_comment(
         self,
         task_id: str,
-        comment_text: str,
+        comment_text: Optional[str] = None,
+        comment: Optional[list[dict]] = None,
         assignee: str = None,
         notify_all: bool = True,
     ) -> models.Comment:
@@ -951,24 +1001,30 @@ class ClickUpClient:
         Args:
             :task_id (str): The id of the task to comment on.
             :comment_text (str): The text of the comment.
+            :comment (list[dict]): The text of the comment.
             :assignee (str, optional): The id of a user to add as an assignee. Defaults to None.
             :notify_all (bool, optional): Notify all valid users of the comment's creation. Defaults to True.
 
         Returns:
             :models.Comment: Returns an object of type Comment.
         """
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("task_id", None)
+        if comment_text is None and comment is None:
+            raise exceptions.ClickupClientError(
+                "Either comment_text or comment must be supplied.", "No comment supplied"
+            )
+
+        data = {
+            "notify_all": notify_all,
+        }
+        if comment_text:
+            data["comment_text"] = comment_text
+        if comment:
+            data["comment"] = comment
 
         model = "task/"
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
-
         created_comment = self.__post_request(
-            model, final_dict, None, False, task_id, "comment"
+            model, json.dumps(data), None, False, task_id, "comment"
         )
 
         final_comment = models.Comment.build_comment(created_comment)
