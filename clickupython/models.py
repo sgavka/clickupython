@@ -177,6 +177,7 @@ class CommentCommentType(enum.Enum):
     TAG = "tag"
     TASK_MENTION = "task_mention"
     FRAME = "frame"
+    EMOTICON = "emoticon"
 
 
 class CommentCommentImage(BaseModel):
@@ -233,6 +234,11 @@ class CommentCommentFrame(BaseModel):
     src: str
     source: int
 
+
+class CommentCommentEmoticon(BaseModel):
+    code: str
+
+
 class CommentComment(BaseModel):
     text: str
     type: CommentCommentType = None
@@ -241,6 +247,7 @@ class CommentComment(BaseModel):
     user: User = None
     task_mention: CommentCommentTaskMention = None
     frame: CommentCommentFrame = None
+    emoticon: CommentCommentEmoticon = None
     attributes: dict = None
 
 
