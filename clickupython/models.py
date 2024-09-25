@@ -176,6 +176,7 @@ class CommentCommentType(enum.Enum):
     ATTACHMENT = "attachment"
     TAG = "tag"
     TASK_MENTION = "task_mention"
+    FRAME = "frame"
 
 
 class CommentCommentImage(BaseModel):
@@ -225,6 +226,13 @@ class CommentCommentTaskMention(BaseModel):
     task_id: str
 
 
+class CommentCommentFrame(BaseModel):
+    id: str
+    service: str
+    url: str
+    src: str
+    source: int
+
 class CommentComment(BaseModel):
     text: str
     type: CommentCommentType = None
@@ -232,6 +240,7 @@ class CommentComment(BaseModel):
     attachment: CommentCommentAttachment = None
     user: User = None
     task_mention: CommentCommentTaskMention = None
+    frame: CommentCommentFrame = None
     attributes: dict = None
 
 
