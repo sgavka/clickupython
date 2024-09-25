@@ -178,6 +178,7 @@ class CommentCommentType(enum.Enum):
     TASK_MENTION = "task_mention"
     FRAME = "frame"
     EMOTICON = "emoticon"
+    GIPHY = "giphy"
 
 
 class CommentCommentImage(BaseModel):
@@ -239,8 +240,14 @@ class CommentCommentEmoticon(BaseModel):
     code: str
 
 
+class CommentCommentGiphy(BaseModel):
+    query: str
+    giphy: str
+    width: str
+
+
 class CommentComment(BaseModel):
-    text: str
+    text: str = None
     type: CommentCommentType = None
     image: CommentCommentImage = None
     attachment: CommentCommentAttachment = None
@@ -248,6 +255,7 @@ class CommentComment(BaseModel):
     task_mention: CommentCommentTaskMention = None
     frame: CommentCommentFrame = None
     emoticon: CommentCommentEmoticon = None
+    giphy: CommentCommentGiphy = None
     attributes: dict = None
 
 
