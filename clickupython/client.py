@@ -90,9 +90,10 @@ class ClickUpClient:
             raise exceptions.ClickupClientError(
                 "Rate limit exceeded", response.status_code
             )
-        if response.status_code in [401, 400, 404]:
+        if response.status_code >= 400:
+            error = response_json.get("err", json.dumps(response_json))
             raise exceptions.ClickupClientError(
-                response_json["err"], response.status_code
+                error, response.status_code
             )
         if response.ok:
             return response_json
@@ -115,18 +116,20 @@ class ClickUpClient:
                 self.request_count += 1
             response_json = response.json()
 
-            if response.status_code in [401, 400, 500, 404]:
+            if response.status_code >= 400:
+                error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
-                    response_json["err"], response.status_code
+                    error, response.status_code
                 )
             if response.ok:
                 return response_json
         else:
             response = requests.post(path, headers=self.__headers())
             response_json = response.json()
-            if response.status_code in [401, 400, 500, 404]:
+            if response.status_code >= 400:
+                error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
-                    response_json["err"], response.status_code
+                    error, response.status_code
                 )
             if response.ok:
                 return response_json
