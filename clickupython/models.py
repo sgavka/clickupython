@@ -1140,6 +1140,7 @@ class WebhookEvent(enum.Enum):
     keyResultCreated = "keyResultCreated"
     keyResultUpdated = "keyResultUpdated"
     keyResultDeleted = "keyResultDeleted"
+    all = "*"
 
 
 class WebhookHealthStatus(enum.Enum):
