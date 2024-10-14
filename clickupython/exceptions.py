@@ -1,7 +1,13 @@
 class ClickupClientError(Exception):
-    def __init__(self, error_message, status_code=None):
+    def __init__(
+            self,
+            error_message,
+            status_code=None,
+            data=None,
+    ):
         self.status_code = status_code
         self.error_message = error_message
+        self.data = data
 
     def __str__(self):
         if self.status_code:

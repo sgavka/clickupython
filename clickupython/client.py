@@ -88,12 +88,18 @@ class ClickUpClient:
             if self.retry_rate_limited_requests:
                 return self.__get_request(model, *additionalpath)
             raise exceptions.ClickupClientError(
-                "Rate limit exceeded", response.status_code
+                "Rate limit exceeded", response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
             )
         if response.status_code >= 400:
             error = response_json.get("err", json.dumps(response_json))
             raise exceptions.ClickupClientError(
-                error, response.status_code
+                error, response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
             )
         if response.ok:
             return response_json
@@ -102,34 +108,64 @@ class ClickUpClient:
     def __post_request(
         self, model, data, upload_files=None, file_upload=False, *additionalpath
     ):
-
         path = formatting.url_join(API_URL, model, *additionalpath)
+
+        self.__check_rate_limit()
+
         if data:
             if upload_files:
                 response = requests.post(
                     path, headers=self.__headers(True), data=data, files=upload_files
                 )
-                self.request_count += 1
             else:
                 response = requests.post(path, headers=self.__headers(), data=data)
-
-                self.request_count += 1
             response_json = response.json()
 
-            if response.status_code >= 400:
+            self.request_count += 1
+            self.__parse_response_rate_limit_headers(response)
+
+            if response.status_code == 429:
+                if self.retry_rate_limited_requests:
+                    return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
+                raise exceptions.ClickupClientError(
+                    "Rate limit exceeded", response.status_code, data={
+                        'response': response.text,
+                        'headers': dict(response.headers),
+                    }
+                )
+            elif response.status_code >= 400:
                 error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
-                    error, response.status_code
+                    error, response.status_code, data={
+                        'response': response.text,
+                        'headers': dict(response.headers),
+                    }
                 )
             if response.ok:
                 return response_json
         else:
             response = requests.post(path, headers=self.__headers())
             response_json = response.json()
-            if response.status_code >= 400:
+
+            self.request_count += 1
+            self.__parse_response_rate_limit_headers(response)
+
+            if response.status_code == 429:
+                if self.retry_rate_limited_requests:
+                    return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
+                raise exceptions.ClickupClientError(
+                    "Rate limit exceeded", response.status_code, data={
+                        'response': response.text,
+                        'headers': dict(response.headers),
+                    }
+                )
+            elif response.status_code >= 400:
                 error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
-                    error, response.status_code
+                    error, response.status_code, data={
+                        'response': response.text,
+                        'headers': dict(response.headers),
+                    }
                 )
             if response.ok:
                 return response_json
@@ -138,11 +174,26 @@ class ClickUpClient:
     def __put_request(self, model, data, *additionalpath):
         path = formatting.url_join(API_URL, model, *additionalpath)
         response = requests.put(path, headers=self.__headers(), data=data)
+
         self.request_count += 1
+        self.__parse_response_rate_limit_headers(response)
+
         response_json = response.json()
-        if response.status_code in [401, 400]:
+        if response.status_code == 429:
+            if self.retry_rate_limited_requests:
+                return self.__put_request(model, data, *additionalpath)
             raise exceptions.ClickupClientError(
-                response_json["err"], response.status_code
+                "Rate limit exceeded", response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
+            )
+        elif response.status_code >= 400:
+            raise exceptions.ClickupClientError(
+                response_json["err"], response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
             )
         if response.ok:
             return response_json
@@ -151,18 +202,36 @@ class ClickUpClient:
     def __delete_request(self, model, *additionalpath):
         path = formatting.url_join(API_URL, model, *additionalpath)
         response = requests.delete(path, headers=self.__headers())
+
         self.request_count += 1
+        self.__parse_response_rate_limit_headers(response)
+
         try:
             response_json = response.json()
         except:
             raise exceptions.ClickupClientError(
-                "Invalid Json response", response.status_code
+                "Invalid Json response", response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
             )
-        if response.ok:
+        if response.status_code == 429:
+            if self.retry_rate_limited_requests:
+                return self.__delete_request(model, *additionalpath)
+            raise exceptions.ClickupClientError(
+                "Rate limit exceeded", response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
+            )
+        elif response.ok:
             return response.status_code
         else:
             raise exceptions.ClickupClientError(
-                response_json["err"], response.status_code
+                response_json["err"], response.status_code, data={
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                }
             )
 
     # Lists
