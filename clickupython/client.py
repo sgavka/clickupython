@@ -129,6 +129,7 @@ class ClickUpClient:
                     return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
                 raise exceptions.ClickupClientError(
                     "Rate limit exceeded", response.status_code, data={
+                        'data': data,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -137,6 +138,7 @@ class ClickUpClient:
                 error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
                     error, response.status_code, data={
+                        'data': data,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -155,6 +157,7 @@ class ClickUpClient:
                     return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
                 raise exceptions.ClickupClientError(
                     "Rate limit exceeded", response.status_code, data={
+                        'data': data,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -163,6 +166,7 @@ class ClickUpClient:
                 error = response_json.get("err", json.dumps(response_json))
                 raise exceptions.ClickupClientError(
                     error, response.status_code, data={
+                        'data': data,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -1728,3 +1732,45 @@ class ClickUpClient:
         if fetched_views:
             return models.Views.build_views(fetched_views)
 
+    def get_webhooks(self, team_id: int) -> models.Webhooks:
+        """Get all webhooks for a team via a team id.
+
+        Args:
+            :team_id (str): The id of the team to fetch webhooks for.
+
+        Returns:
+            :models.Webhooks: Returns an object of type Webhooks.
+        """
+        model = "team/"
+        fetched_webhooks = self.__get_request(model, str(team_id), "webhook")
+        if fetched_webhooks:
+            return models.Webhooks.build_webhooks(fetched_webhooks)
+
+    def create_webhook(self, team_id: int, create_webhook: models.CreateWebhook) -> models.Webhook:
+        """Create a webhook for a team.
+
+        Args:
+            :create_webhook (models.CreateWebhook): An instance of CreateWebhook.
+
+        Returns:
+            :models.Webhook: Returns an object of type Webhook.
+        """
+        model = "team/"
+        created_webhook = self.__post_request(
+            model, create_webhook.model_dump_json(), None, False, str(team_id), "webhook"
+        )
+        if created_webhook:
+            return models.CreatedWebhook.build_webhook(created_webhook).webhook
+
+    def delete_webhook(self, webhook_id: str) -> bool:
+        """Delete a webhook via a given webhook id.
+
+        Args:
+            :webhook_id (str): The id of the webhook to delete.
+
+        Returns:
+            :bool: Returns True.
+        """
+        model = "webhook/"
+        self.__delete_request(model, webhook_id)
+        return True

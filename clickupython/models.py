@@ -1109,3 +1109,89 @@ class CustomFieldFilter(BaseModel):
 class CreateTaskCustomField(BaseModel):
     id: str
     value: Union[str, int]
+
+
+class WebhookEvent(enum.Enum):
+    taskCreated = "taskCreated"
+    taskUpdated = "taskUpdated"
+    taskDeleted = "taskDeleted"
+    taskPriorityUpdated = "taskPriorityUpdated"
+    taskStatusUpdated = "taskStatusUpdated"
+    taskAssigneeUpdated = "taskAssigneeUpdated"
+    taskDueDateUpdated = "taskDueDateUpdated"
+    taskTagUpdated = "taskTagUpdated"
+    taskMoved = "taskMoved"
+    taskCommentPosted = "taskCommentPosted"
+    taskCommentUpdated = "taskCommentUpdated"
+    taskTimeEstimateUpdated = "taskTimeEstimateUpdated"
+    taskTimeTrackedUpdated = "taskTimeTrackedUpdated"
+    listCreated = "listCreated"
+    listUpdated = "listUpdated"
+    listDeleted = "listDeleted"
+    folderCreated = "folderCreated"
+    folderUpdated = "folderUpdated"
+    folderDeleted = "folderDeleted"
+    spaceCreated = "spaceCreated"
+    spaceUpdated = "spaceUpdated"
+    spaceDeleted = "spaceDeleted"
+    goalCreated = "goalCreated"
+    goalUpdated = "goalUpdated"
+    goalDeleted = "goalDeleted"
+    keyResultCreated = "keyResultCreated"
+    keyResultUpdated = "keyResultUpdated"
+    keyResultDeleted = "keyResultDeleted"
+
+
+class WebhookHealthStatus(enum.Enum):
+    active = "active"
+    failing = "failing"
+
+
+class WebhookHealth(BaseModel):
+    status: WebhookHealthStatus
+    fail_count: int
+
+
+class Webhook(BaseModel):
+    id: str
+    userid: int
+    team_id: int
+    endpoint: str
+    client_id: str
+    events: List[WebhookEvent]
+    task_id: Optional[str]
+    list_id: Optional[str]
+    folder_id: Optional[str]
+    space_id: Optional[str]
+    health: WebhookHealth
+    secret: str
+
+    def build_webhook(self):
+        return Webhook(**self)
+
+
+class Webhooks(BaseModel):
+    webhooks: List[Webhook] = None
+
+    def build_webhooks(self):
+        return Webhooks(**self)
+
+
+class CreateWebhook(BaseModel):
+    endpoint: str
+    events: list[WebhookEvent]
+    space_id: Optional[str] = None
+    folder_id: Optional[str] = None
+    list_id: Optional[str] = None
+    task_id: Optional[str] = None
+
+
+class CreatedWebhook(BaseModel):
+    id: str
+    webhook: Webhook
+
+    def build_webhook(self):
+        return CreatedWebhook(**self)
+
+    def model_dump_json(self):
+        return self.json()
