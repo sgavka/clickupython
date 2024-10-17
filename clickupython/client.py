@@ -42,8 +42,8 @@ class ClickUpClient:
         self.retry_rate_limited_requests= retry_rate_limited_requests
 
     def __parse_response_rate_limit_headers(self, response : requests.Response):
-        self.rate_limit_remaining = int(response.headers.get("x-ratelimit-remaining"))
-        self.rate_limit_reset = float(response.headers.get("x-ratelimit-reset"))
+        self.rate_limit_remaining = int(response.headers.get("x-ratelimit-remaining", 0))
+        self.rate_limit_reset = float(response.headers.get("x-ratelimit-reset", 0))
 
     def __check_rate_limit(self):
         if self.rate_limit_remaining <= 1:
@@ -89,6 +89,7 @@ class ClickUpClient:
                 return self.__get_request(model, *additionalpath)
             raise exceptions.ClickupClientError(
                 "Rate limit exceeded", response.status_code, data={
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -97,6 +98,7 @@ class ClickUpClient:
             error = response_json.get("err", json.dumps(response_json))
             raise exceptions.ClickupClientError(
                 error, response.status_code, data={
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -130,6 +132,7 @@ class ClickUpClient:
                 raise exceptions.ClickupClientError(
                     "Rate limit exceeded", response.status_code, data={
                         'data': data,
+                        'additionalpath': additionalpath,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -139,6 +142,7 @@ class ClickUpClient:
                 raise exceptions.ClickupClientError(
                     error, response.status_code, data={
                         'data': data,
+                        'additionalpath': additionalpath,
                         'response': response.text,
                         'headers': dict(response.headers),
                     }
@@ -188,6 +192,8 @@ class ClickUpClient:
                 return self.__put_request(model, data, *additionalpath)
             raise exceptions.ClickupClientError(
                 "Rate limit exceeded", response.status_code, data={
+                    'data': data,
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -195,6 +201,8 @@ class ClickUpClient:
         elif response.status_code >= 400:
             raise exceptions.ClickupClientError(
                 response_json["err"], response.status_code, data={
+                    'data': data,
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -215,6 +223,7 @@ class ClickUpClient:
         except:
             raise exceptions.ClickupClientError(
                 "Invalid Json response", response.status_code, data={
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -224,6 +233,7 @@ class ClickUpClient:
                 return self.__delete_request(model, *additionalpath)
             raise exceptions.ClickupClientError(
                 "Rate limit exceeded", response.status_code, data={
+                    'additionalpath': additionalpath,
                     'response': response.text,
                     'headers': dict(response.headers),
                 }
@@ -1023,9 +1033,10 @@ class ClickUpClient:
         self,
         comment_id: str,
         comment_text: str = None,
+        comment: Optional[list[dict]] = None,
         assignee: str = None,
         resolved: bool = None,
-    ) -> models.Comment:
+    ) -> bool:
         """Update a ClickUp comment's content, assignee and resolution status.
 
         Args:
@@ -1038,7 +1049,7 @@ class ClickUpClient:
             :models.Comment: [description]
         """
         arguments = {}
-        arguments.update(vars())
+        arguments.update(vars().copy())
         arguments.pop("self", None)
         arguments.pop("arguments", None)
         arguments.pop("comment_id", None)
