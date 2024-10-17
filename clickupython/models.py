@@ -259,6 +259,12 @@ class CommentComment(BaseModel):
     attributes: dict = None
 
 
+class Reaction(BaseModel):
+    reaction: str = None
+    date: int = None
+    user: User = None
+
+
 class Comment(BaseModel):
     id: int = None
     comment: List[CommentComment] = None
@@ -267,7 +273,7 @@ class Comment(BaseModel):
     resolved: bool = None
     assignee: Optional[AssignedBy] = None
     assigned_by: AssignedBy = None
-    reactions: List[Any] = None
+    reactions: List[Reaction] = None
     date: int = None
     hist_id: str = None
     reply_count: int = None
@@ -1123,6 +1129,7 @@ class WebhookEvent(enum.Enum):
     taskMoved = "taskMoved"
     taskCommentPosted = "taskCommentPosted"
     taskCommentUpdated = "taskCommentUpdated"
+    taskCommentReaction = "taskCommentReaction"
     taskTimeEstimateUpdated = "taskTimeEstimateUpdated"
     taskTimeTrackedUpdated = "taskTimeTrackedUpdated"
     listCreated = "listCreated"
