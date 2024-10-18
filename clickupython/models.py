@@ -306,7 +306,7 @@ class Option(BaseModel):
 
     color: Optional[str]
 
-    order_index: Optional[int]
+    orderindex: Optional[int]
 
 
 class TypeConfig(BaseModel):
