@@ -542,8 +542,10 @@ class ClickUpClient:
                     )
                 return final_attachment
 
-    # // TODO Add "Include subtasks option"
-    def get_task(self, task_id: str) -> models.Task:
+    def get_task(self,
+            task_id: str,
+            include_subtasks: bool = False,
+    ) -> models.Task:
         """Fetches a single ClickUp task item and returns a Task object.
 
         Args:
@@ -552,8 +554,17 @@ class ClickUpClient:
         Returns:
             :Task: Returns an object of type Task.
         """
+        get_params = {}
+        if include_subtasks:
+            get_params["include_subtasks"] = 'true'
+
+        get_part = ''
+        if len(get_params) > 0:
+            get_part = urllib.parse.urlencode(get_params)
+            get_part = f"?{get_part}"
+
         model = "task/"
-        fetched_task = self.__get_request(model, task_id)
+        fetched_task = self.__get_request(model, task_id, get_part)
         final_task = models.Task.build_task(fetched_task)
         if final_task:
             return final_task

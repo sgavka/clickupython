@@ -707,6 +707,8 @@ class Task(BaseModel):
     space: Optional[Folder] = None
     url: Optional[str] = ""
 
+    subtasks: Optional[List['Task']] = None
+
     def build_task(self):
         return Task(**self)
 
