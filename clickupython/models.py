@@ -34,6 +34,15 @@ class Asssignee(BaseModel):
     profilePicture: Optional[str] = None
 
 
+class Watcher(BaseModel):
+    id: int = None
+    username: str = None
+    color: str = None
+    initials: str = None
+    email: str = None
+    profilePicture: Optional[str] = None
+
+
 class ListFolder(BaseModel):
     id: str
     name: str
@@ -676,6 +685,7 @@ class Task(BaseModel):
     creator: Optional[Creator] = None
 
     assignees: Optional[List[Asssignee]] = None
+    watchers: Optional[List[Watcher]] = None
 
     task_checklists: Optional[List[Any]] = Field(None, alias="checklists")
 

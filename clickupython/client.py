@@ -19,16 +19,16 @@ API_URL = "https://api.clickup.com/api/v2/"
 
 class ClickUpClient:
     def __init__(
-        self,
-        accesstoken: str,
-        api_url: str = API_URL,
-        default_space: str = None,
-        default_list: str = None,
-        default_task: str = None,
-        retry_rate_limited_requests: bool = False,
-        rate_limit_buffer_wait_time: int = 5,
-        start_rate_limit_remaining: int = 100,
-        start_rate_limit_reset: float = datetime.now().timestamp()
+            self,
+            accesstoken: str,
+            api_url: str = API_URL,
+            default_space: str = None,
+            default_list: str = None,
+            default_task: str = None,
+            retry_rate_limited_requests: bool = False,
+            rate_limit_buffer_wait_time: int = 5,
+            start_rate_limit_remaining: int = 100,
+            start_rate_limit_reset: float = datetime.now().timestamp()
     ):
         self.api_url = api_url
         self.accesstoken = accesstoken
@@ -39,9 +39,9 @@ class ClickUpClient:
         self.rate_limit_remaining = start_rate_limit_remaining
         self.rate_limit_reset = start_rate_limit_reset
         self.rate_limit_buffer_wait_time = rate_limit_buffer_wait_time
-        self.retry_rate_limited_requests= retry_rate_limited_requests
+        self.retry_rate_limited_requests = retry_rate_limited_requests
 
-    def __parse_response_rate_limit_headers(self, response : requests.Response):
+    def __parse_response_rate_limit_headers(self, response: requests.Response):
         self.rate_limit_remaining = int(response.headers.get("x-ratelimit-remaining", 0))
         self.rate_limit_reset = float(response.headers.get("x-ratelimit-reset", 0))
 
@@ -64,7 +64,9 @@ class ClickUpClient:
         """
 
         return (
-            {"Authorization": self.accesstoken}
+            {
+                "Authorization": self.accesstoken
+            }
             if file_upload
             else {
                 "Authorization": self.accesstoken,
@@ -108,7 +110,7 @@ class ClickUpClient:
 
     # Performs a Post request to the ClickUp API
     def __post_request(
-        self, model, data, upload_files=None, file_upload=False, *additionalpath
+            self, model, data, upload_files=None, file_upload=False, *additionalpath
     ):
         path = formatting.url_join(API_URL, model, *additionalpath)
 
@@ -263,7 +265,6 @@ class ClickUpClient:
 
         return models.SingleList.build_list(fetched_list)
 
-    
     def get_folderless_lists(self, space_id: str) -> models.AllLists:
         """Fetches all folderless lists from a given space id and returns a list of List objects.
 
@@ -276,8 +277,7 @@ class ClickUpClient:
         model = "space/"
         fetched_lists = self.__get_request(model, space_id, "list")
         return models.AllLists.build_lists(fetched_lists)
-    
-    
+
     def get_lists(self, folder_id: str) -> models.AllLists:
         """Fetches all lists from a given folder id and returns a list of List objects.
 
@@ -292,13 +292,13 @@ class ClickUpClient:
         return models.AllLists.build_lists(fetched_lists)
 
     def create_list(
-        self,
-        folder_id: str,
-        name: str,
-        content: str,
-        due_date: str,
-        priority: int,
-        status: str,
+            self,
+            folder_id: str,
+            name: str,
+            content: str,
+            due_date: str,
+            priority: int,
+            status: str,
     ) -> models.SingleList:
         """Creates and returns a List object in a folder from a given folder ID.
 
@@ -327,14 +327,14 @@ class ClickUpClient:
             return models.SingleList.build_list(created_list)
 
     def create_folderless_list(
-        self,
-        space_id: str,
-        name: str,
-        content: str = None,
-        due_date: str = None,
-        priority: int = None,
-        assignee: str = None,
-        status: str = None,
+            self,
+            space_id: str,
+            name: str,
+            content: str = None,
+            due_date: str = None,
+            priority: int = None,
+            assignee: str = None,
+            status: str = None,
     ) -> models.SingleList:
 
         arguments = {}
@@ -354,15 +354,15 @@ class ClickUpClient:
 
     # //TODO Add unit tests
     def update_list(
-        self,
-        list_id: str,
-        name: str = None,
-        content: str = None,
-        due_date: str = None,
-        due_date_time: bool = None,
-        priority: int = None,
-        assignee: str = None,
-        unset_status: bool = None,
+            self,
+            list_id: str,
+            name: str = None,
+            content: str = None,
+            due_date: str = None,
+            due_date_time: bool = None,
+            priority: int = None,
+            assignee: str = None,
+            unset_status: bool = None,
     ) -> models.SingleList:
 
         if priority and priority not in range(1, 4):
@@ -398,9 +398,9 @@ class ClickUpClient:
         return True
 
     def add_task_to_list(
-        self,
-        task_id: str,
-        list_id: str,
+            self,
+            task_id: str,
+            list_id: str,
     ) -> models.Task:
         """Adds a task to a list via a gen task id and list id.
 
@@ -417,9 +417,9 @@ class ClickUpClient:
         return True
 
     def remove_task_from_list(
-        self,
-        task_id: str,
-        list_id: str,
+            self,
+            task_id: str,
+            list_id: str,
     ) -> bool:
         """Removes a task from a list via a given task id and list id.
 
@@ -528,7 +528,9 @@ class ClickUpClient:
 
             with open(file_path, "rb") as f:
                 files = [("attachment", (f.name, open(file_path, "rb")))]
-                data = {"filename": ntpath.basename(f.name)}
+                data = {
+                    "filename": ntpath.basename(f.name)
+                }
                 model = "task/" + task_id
                 uploaded_attachment = self.__post_request(
                     model, data, files, True, "attachment"
@@ -557,25 +559,25 @@ class ClickUpClient:
             return final_task
 
     def get_team_tasks(
-        self,
-        team_Id: str,
-        page: int = 0,
-        order_by: str = "created",
-        reverse: bool = False,
-        subtasks: bool = False,
-        space_ids: List[str] = None,
-        project_ids: List[str] = None,
-        list_ids: List[str] = None,
-        statuses: List[str] = None,
-        include_closed: bool = False,
-        assignees: List[str] = None,
-        tags: List[str] = None,
-        due_date_gt: str = None,
-        due_date_lt: str = None,
-        date_created_gt: str = None,
-        date_created_lt: str = None,
-        date_updated_gt: str = None,
-        date_updated_lt: str = None,
+            self,
+            team_Id: str,
+            page: int = 0,
+            order_by: str = "created",
+            reverse: bool = False,
+            subtasks: bool = False,
+            space_ids: List[str] = None,
+            project_ids: List[str] = None,
+            list_ids: List[str] = None,
+            statuses: List[str] = None,
+            include_closed: bool = False,
+            assignees: List[str] = None,
+            tags: List[str] = None,
+            due_date_gt: str = None,
+            due_date_lt: str = None,
+            date_created_gt: str = None,
+            date_created_lt: str = None,
+            date_updated_gt: str = None,
+            date_updated_lt: str = None,
     ) -> models.Tasks:
         """Gets filtered tasks for a team.
 
@@ -659,24 +661,24 @@ class ClickUpClient:
             return models.Tasks.build_tasks(fetched_tasks)
 
     def get_tasks(
-        self,
-        list_id: str,
-        archived: bool = False,
-        page: int = 0,
-        order_by: str = "created",
-        reverse: bool = False,
-        subtasks: bool = False,
-        statuses: List[str] = None,
-        include_closed: bool = False,
-        assignees: List[str] = None,
-        due_date_gt: str = None,
-        due_date_lt: str = None,
-        date_created_gt: str = None,
-        date_created_lt: str = None,
-        date_updated_gt: str = None,
-        date_updated_lt: str = None,
-        custom_fields: List[models.CustomFieldFilter] = None,
-        custom_field: models.CustomFieldFilter = None,
+            self,
+            list_id: str,
+            archived: bool = False,
+            page: int = 0,
+            order_by: str = "created",
+            reverse: bool = False,
+            subtasks: bool = False,
+            statuses: List[str] = None,
+            include_closed: bool = False,
+            assignees: List[str] = None,
+            due_date_gt: str = None,
+            due_date_lt: str = None,
+            date_created_gt: str = None,
+            date_created_lt: str = None,
+            date_updated_gt: str = None,
+            date_updated_lt: str = None,
+            custom_fields: List[models.CustomFieldFilter] = None,
+            custom_field: models.CustomFieldFilter = None,
     ) -> models.Tasks:
 
         """The maximum number of tasks returned in this response is 100. When you are paging this request, you should check list limit
@@ -768,18 +770,18 @@ class ClickUpClient:
             return models.Tasks.build_tasks(fetched_tasks)
 
     def create_task(
-        self,
-        list_id: str,
-        name: str,
-        description: str = None,
-        priority: int = None,
-        assignees: [] = None,
-        tags: [] = None,
-        status: str = None,
-        due_date: str = None,
-        start_date: str = None,
-        notify_all: bool = True,
-        custom_fields: List[models.CreateTaskCustomField] = None,
+            self,
+            list_id: str,
+            name: str,
+            description: str = None,
+            priority: int = None,
+            assignees: [] = None,
+            tags: [] = None,
+            status: str = None,
+            due_date: str = None,
+            start_date: str = None,
+            notify_all: bool = True,
+            custom_fields: List[models.CreateTaskCustomField] = None,
     ) -> models.Task:
 
         """[summary]
@@ -830,16 +832,18 @@ class ClickUpClient:
             return models.Task.build_task(created_task)
 
     def update_task(
-        self,
-        task_id,
-        name: str = None,
-        description: str = None,
-        status: str = None,
-        priority: int = None,
-        time_estimate: int = None,
-        archived: bool = None,
-        add_assignees: List[str] = None,
-        remove_assignees: List[int] = None,
+            self,
+            task_id,
+            name: str = None,
+            description: str = None,
+            status: str = None,
+            priority: int = None,
+            time_estimate: int = None,
+            archived: bool = None,
+            add_assignees: List[str] = None,
+            remove_assignees: List[int] = None,
+            add_watchers: List[str] = None,
+            remove_watchers: List[int] = None,
     ) -> models.Task:
 
         """[summary]
@@ -854,6 +858,8 @@ class ClickUpClient:
             :archived (bool, optional): Whether the task should be archived or not. Defaults to None.
             :add_assignees (List[str], optional): List of assignee IDs to add to the task. Defaults to None.
             :remove_assignees (List[int], optional): List of assignee IDs to remove from the task. Defaults to None.
+            :add_watchers (List[str], optional): List of watcher IDs to add to the task. Defaults to None.
+            :remove_watchers (List[int], optional): List of watcher IDs to remove from the task. Defaults
 
         Raises:
             :exceptions.ClickupClientError: Raises "Priority out of range" exception for invalid priority range.
@@ -873,15 +879,60 @@ class ClickUpClient:
         arguments.pop("task_id", None)
         arguments.pop("add_assignees", None)
         arguments.pop("remove_assignees", None)
+        arguments.pop("add_watchers", None)
+        arguments.pop("remove_watchers", None)
 
         if add_assignees and remove_assignees:
             arguments.update(
-                {"assignees": {"add": add_assignees, "rem": remove_assignees}}
+                {
+                    "assignees": {
+                        "add": add_assignees,
+                        "rem": remove_assignees
+                    }
+                }
             )
         elif add_assignees:
-            arguments.update({"assignees": {"add": add_assignees}})
+            arguments.update(
+                {
+                    "assignees": {
+                        "add": add_assignees
+                    }
+                }
+            )
         elif remove_assignees:
-            arguments.update({"assignees": {"rem": remove_assignees}})
+            arguments.update(
+                {
+                    "assignees": {
+                        "rem": remove_assignees
+                    }
+                }
+            )
+
+        if add_watchers and remove_watchers:
+            arguments.update(
+                {
+                    "watchers": {
+                        "add": add_watchers,
+                        "rem": remove_watchers
+                    }
+                }
+            )
+        elif add_watchers:
+            arguments.update(
+                {
+                    "watchers": {
+                        "add": add_watchers
+                    }
+                }
+            )
+        elif remove_watchers:
+            arguments.update(
+                {
+                    "watchers": {
+                        "rem": remove_watchers
+                    }
+                }
+            )
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
 
@@ -1030,12 +1081,12 @@ class ClickUpClient:
             return final_comment
 
     def update_comment(
-        self,
-        comment_id: str,
-        comment_text: str = None,
-        comment: Optional[list[dict]] = None,
-        assignee: str = None,
-        resolved: bool = None,
+            self,
+            comment_id: str,
+            comment_text: str = None,
+            comment: Optional[list[dict]] = None,
+            assignee: str = None,
+            resolved: bool = None,
     ) -> bool:
         """Update a ClickUp comment's content, assignee and resolution status.
 
@@ -1076,12 +1127,12 @@ class ClickUpClient:
         return True
 
     def create_task_comment(
-        self,
-        task_id: str,
-        comment_text: Optional[str] = None,
-        comment: Optional[list[dict]] = None,
-        assignee: str = None,
-        notify_all: bool = True,
+            self,
+            task_id: str,
+            comment_text: Optional[str] = None,
+            comment: Optional[list[dict]] = None,
+            assignee: str = None,
+            notify_all: bool = True,
     ) -> models.Comment:
         """Create a comment on a task via a given task id.
 
@@ -1119,10 +1170,10 @@ class ClickUpClient:
             return final_comment
 
     def create_chat_comment(
-        self,
-        view_id: str,
-        comment_text: str,
-        notify_all: bool = True,
+            self,
+            view_id: str,
+            comment_text: str,
+            notify_all: bool = True,
     ) -> models.Comment:
         """Create a comment on a chat via a given chat view id.
 
@@ -1188,7 +1239,7 @@ class ClickUpClient:
         return models.Checklists.build_checklist(created_checklist)
 
     def create_checklist_item(
-        self, checklist_id: str, name: str, assignee: str = None
+            self, checklist_id: str, name: str, assignee: str = None
     ) -> models.Checklist:
         """create_checklist_item Creates an item in a ClickUp checklist via a given checklist id.
 
@@ -1202,7 +1253,12 @@ class ClickUpClient:
         """
         data = {}
 
-        data = {"name": name, "assignee": assignee} if assignee else {"name": name}
+        data = {
+            "name": name,
+            "assignee": assignee
+        } if assignee else {
+            "name": name
+        }
         model = "checklist/"
         created_checklist = self.__post_request(
             model, json.dumps(data), None, False, checklist_id, "checklist_item"
@@ -1210,7 +1266,7 @@ class ClickUpClient:
         return models.Checklists.build_checklist(created_checklist)
 
     def update_checklist(
-        self, checklist_id: str, name: str = None, postion: int = None
+            self, checklist_id: str, name: str = None, postion: int = None
     ) -> models.Checklist:
         """update_checklist Updates a ClickUp checklist.
 
@@ -1228,9 +1284,17 @@ class ClickUpClient:
         data = {}
 
         if name:
-            data.update({"name": name})
+            data.update(
+                {
+                    "name": name
+                }
+            )
         if postion:
-            data.update({"postition": position})
+            data.update(
+                {
+                    "postition": position
+                }
+            )
 
         model = "checklist/"
         updated_checklist = self.__put_request(model, json.dumps(data), checklist_id)
@@ -1262,12 +1326,12 @@ class ClickUpClient:
         return True
 
     def update_checklist_item(
-        self,
-        checklist_id: str,
-        checklist_item_id: str,
-        name: str = None,
-        resolved: bool = None,
-        parent: str = None,
+            self,
+            checklist_id: str,
+            checklist_item_id: str,
+            name: str = None,
+            resolved: bool = None,
+            parent: str = None,
     ) -> models.Checklist:
         """Updates an item in a checklist via a given checklist id and item id.
 
@@ -1334,14 +1398,14 @@ class ClickUpClient:
     # Goals
 
     def create_goal(
-        self,
-        team_id,
-        name: str,
-        due_date: str = None,
-        description: str = None,
-        multiple_owners: bool = True,
-        owners: List[int] = None,
-        color: str = None,
+            self,
+            team_id,
+            name: str,
+            due_date: str = None,
+            description: str = None,
+            multiple_owners: bool = True,
+            owners: List[int] = None,
+            color: str = None,
     ) -> models.Goal:
         """Create a new goal for a team given a team id.
 
@@ -1365,7 +1429,11 @@ class ClickUpClient:
         arguments.pop("owners", None)
 
         if multiple_owners and owners:
-            arguments.update({"owners": owners})
+            arguments.update(
+                {
+                    "owners": owners
+                }
+            )
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
 
@@ -1377,14 +1445,14 @@ class ClickUpClient:
             return models.Goals.build_goals(created_goal)
 
     def update_goal(
-        self,
-        goal_id: str,
-        name: str = None,
-        due_date: str = None,
-        description: str = None,
-        rem_owners: List[str] = None,
-        add_owners: List[str] = None,
-        color: str = None,
+            self,
+            goal_id: str,
+            name: str = None,
+            due_date: str = None,
+            description: str = None,
+            rem_owners: List[str] = None,
+            add_owners: List[str] = None,
+            color: str = None,
     ) -> models.Goal:
         """Updates a goal via a given goal id.
 
@@ -1484,9 +1552,9 @@ class ClickUpClient:
             return final_tags
 
     def create_space_tag(
-        self,
-        space_id,
-        name: str,
+            self,
+            space_id,
+            name: str,
     ) -> models.Tag:
         """Creates a tag to be utilized in a space.
 
@@ -1504,7 +1572,11 @@ class ClickUpClient:
         arguments.pop("space_id", None)
 
         final_dict = {k: v for k, v in arguments.items() if v is not None}
-        final_tag = json.dumps({"tag": final_dict})
+        final_tag = json.dumps(
+            {
+                "tag": final_dict
+            }
+        )
 
         model = "space/"
         created_tag = self.__post_request(
@@ -1532,9 +1604,9 @@ class ClickUpClient:
     #     return None
 
     def tag_task(
-        self,
-        task_id: str,
-        tag_name: str,
+            self,
+            task_id: str,
+            tag_name: str,
     ):
 
         model = "task/"
@@ -1543,9 +1615,9 @@ class ClickUpClient:
         return True
 
     def untag_task(
-        self,
-        task_id: str,
-        tag_name: str,
+            self,
+            task_id: str,
+            tag_name: str,
     ):
         model = "task/"
         self.__delete_request(model, task_id, "tag", tag_name)
@@ -1554,7 +1626,7 @@ class ClickUpClient:
     # Spaces
 
     def create_space(
-        self, team_id: str, name: str, features: models.Features
+            self, team_id: str, name: str, features: models.Features
     ) -> models.Space:
         """create_space Create's a new ClickUp space.
 
@@ -1634,11 +1706,11 @@ class ClickUpClient:
 
     # Time Tracking
     def get_time_entries_in_range(
-        self,
-        team_id: str,
-        start_date: str = None,
-        end_date: str = None,
-        assignees: List[str] = None,
+            self,
+            team_id: str,
+            start_date: str = None,
+            end_date: str = None,
+            assignees: List[str] = None,
     ) -> models.TimeTrackingData:
         """Gets a list of time tracking entries for a specific date range.
 
@@ -1676,7 +1748,7 @@ class ClickUpClient:
             return models.TimeTrackingDataList.build_data(fetched_time_data)
 
     def get_single_time_entry(
-        self, team_id: str, timer_id: str
+            self, team_id: str, timer_id: str
     ) -> models.TimeTrackingData:
         """Gets a single time tracking object.
 
