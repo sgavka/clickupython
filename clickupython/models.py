@@ -242,7 +242,7 @@ class CommentCommentFrame(BaseModel):
     service: str
     url: str
     src: str
-    source: int
+    source: int = None
 
 
 class CommentCommentEmoticon(BaseModel):
