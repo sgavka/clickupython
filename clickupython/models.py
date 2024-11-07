@@ -188,6 +188,7 @@ class CommentCommentType(enum.Enum):
     FRAME = "frame"
     EMOTICON = "emoticon"
     GIPHY = "giphy"
+    VIEW_MENTION = "view_mention"
 
 
 class CommentCommentImage(BaseModel):
