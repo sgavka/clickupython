@@ -791,6 +791,7 @@ class ClickUpClient:
             status: str = None,
             due_date: str = None,
             start_date: str = None,
+            parent: str = None,
             notify_all: bool = True,
             custom_fields: List[models.CreateTaskCustomField] = None,
     ) -> models.Task:
