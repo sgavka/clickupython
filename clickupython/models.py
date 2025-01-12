@@ -659,7 +659,7 @@ class Priority(BaseModel):
 
 class StatusTwo(BaseModel):
     id: Optional[str] = None
-    status: str = None
+    status: Optional[str] = None
     color: str = None
     orderindex: int = None
     type: str = None
