@@ -1244,9 +1244,10 @@ class WebhookHistoryItem(BaseModel):
 
 
 class WebhookRequest(BaseModel):
-    event: Optional[WebhookEvent]
-    history_items: Optional[List[WebhookHistoryItem]]
+    event: WebhookEvent
+    history_items: Optional[List[WebhookHistoryItem]] = None
     task_id: Optional[str]
+    webhook_id: str
 
     @property
     def first_history_item(self) -> Optional[WebhookHistoryItem]:
