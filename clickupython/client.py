@@ -20,22 +20,16 @@ API_URL = "https://api.clickup.com/api/v2/"
 class ClickUpClient:
     def __init__(
             self,
-            accesstoken: str,
+            token: str,
             api_url: str = API_URL,
-            default_space: str = None,
-            default_list: str = None,
-            default_task: str = None,
             retry_rate_limited_requests: bool = False,
             rate_limit_buffer_wait_time: int = 5,
             start_rate_limit_remaining: int = 100,
             start_rate_limit_reset: float = datetime.now().timestamp()
     ):
         self.api_url = api_url
-        self.accesstoken = accesstoken
+        self.token = token
         self.request_count = 0
-        self.default_space = default_space
-        self.default_list = default_list
-        self.default_task = default_task
         self.rate_limit_remaining = start_rate_limit_remaining
         self.rate_limit_reset = start_rate_limit_reset
         self.rate_limit_buffer_wait_time = rate_limit_buffer_wait_time
@@ -65,11 +59,11 @@ class ClickUpClient:
 
         return (
             {
-                "Authorization": self.accesstoken
+                "Authorization": self.token
             }
             if file_upload
             else {
-                "Authorization": self.accesstoken,
+                "Authorization": self.token,
                 "Content-Type": "application/json",
             }
         )

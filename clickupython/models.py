@@ -9,7 +9,7 @@ class Priority(BaseModel):
     color: str
 
 
-class Status(BaseModel):
+class StatusOne(BaseModel):
     status: str = None
     color: str = None
 
@@ -74,7 +74,7 @@ class SingleList(BaseModel):
     inbound_address: str = None
     permission_level: str = None
     content: Optional[str] = None
-    status: Optional[Status] = None
+    status: Optional[StatusOne] = None
     task_count: Optional[int] = None
     start_date_time: Optional[str] = None
     due_date_time: Optional[bool] = None
@@ -342,19 +342,27 @@ class DueDates(BaseModel):
     remap_closed_due_date: bool = None
 
 
+class CustomFieldValue(BaseModel):
+    id: str = None
+    name: str = None
+    status: str = None
+    color: str = None
+    custom_type: Optional[str] = None
+    team_id: str = None
+    deleted: bool
+    url: str = None
+    access: bool
+
+
 class CustomField(BaseModel):
     id: str = None
     name: str = None
-
     type: str = None
-
     type_config: TypeConfig = None
     date_created: str = None
-
     hide_from_guests: bool = None
-
-    value: Optional[Any] = None
-
+    value: Optional[Union[str, int, list[CustomFieldValue]]] = None
+    value_richtext: Optional[str] = None
     required: Optional[bool] = None
 
 
@@ -590,7 +598,7 @@ class Space(BaseModel):
 
     private: Optional[bool] = False
 
-    statuses: Optional[List[Status]] = None
+    statuses: Optional[List[StatusOne]] = None
 
     archived: Optional[bool] = None
 
@@ -649,13 +657,11 @@ class Priority(BaseModel):
     orderindex: str = None
 
 
-class Status(BaseModel):
+class StatusTwo(BaseModel):
     id: Optional[str] = None
     status: str = None
     color: str = None
-
     orderindex: int = None
-
     type: str = None
 
 
@@ -676,7 +682,7 @@ class Task(BaseModel):
     text_content: Optional[str] = None
     description: Optional[str] = None
 
-    status: Optional[Status] = None
+    status: Optional[StatusTwo] = None
 
     orderindex: Optional[str] = None
     date_created: Optional[str] = None
@@ -1216,3 +1222,34 @@ class CreatedWebhook(BaseModel):
 
     def model_dump_json(self):
         return self.json()
+
+
+class WebhookHistoryItem(BaseModel):
+    comment: Optional[Comment] = None
+    parent_id: Optional[str]
+    before: Optional[Union[
+        str,
+        list[str],
+        list[CustomFieldValue],
+        StatusTwo,
+    ]] = None
+    after: Optional[Union[
+        str,
+        list[str],
+        list[CustomFieldValue],
+        StatusTwo,
+    ]] = None
+    field: Optional[str] = None
+    custom_field: Optional[CustomField] = None
+
+
+class WebhookRequest(BaseModel):
+    event: Optional[WebhookEvent]
+    history_items: Optional[List[WebhookHistoryItem]]
+    task_id: Optional[str]
+
+    @property
+    def first_history_item(self) -> Optional[WebhookHistoryItem]:
+        if not self.history_items:
+            return None
+        return self.history_items[0]
