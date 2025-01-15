@@ -8,6 +8,7 @@ from time import sleep
 from typing import List, Optional
 
 import requests
+from requests import JSONDecodeError
 
 from clickupython import exceptions
 from clickupython import models
@@ -76,7 +77,10 @@ class ClickUpClient:
 
         response = requests.get(path, headers=self.__headers())
         self.request_count += 1
-        response_json = response.json()
+        try:
+            response_json = response.json()
+        except JSONDecodeError:
+            return self.__get_request(model, *additionalpath)
 
         self.__parse_response_rate_limit_headers(response)
 
@@ -117,7 +121,10 @@ class ClickUpClient:
                 )
             else:
                 response = requests.post(path, headers=self.__headers(), data=data)
-            response_json = response.json()
+            try:
+                response_json = response.json()
+            except JSONDecodeError:
+                return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
 
             self.request_count += 1
             self.__parse_response_rate_limit_headers(response)
@@ -147,7 +154,10 @@ class ClickUpClient:
                 return response_json
         else:
             response = requests.post(path, headers=self.__headers())
-            response_json = response.json()
+            try:
+                response_json = response.json()
+            except JSONDecodeError:
+                return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
 
             self.request_count += 1
             self.__parse_response_rate_limit_headers(response)
@@ -182,7 +192,11 @@ class ClickUpClient:
         self.request_count += 1
         self.__parse_response_rate_limit_headers(response)
 
-        response_json = response.json()
+        try:
+            response_json = response.json()
+        except JSONDecodeError:
+            return self.__put_request(model, data, *additionalpath)
+
         if response.status_code == 429:
             if self.retry_rate_limited_requests:
                 return self.__put_request(model, data, *additionalpath)
@@ -216,14 +230,9 @@ class ClickUpClient:
 
         try:
             response_json = response.json()
-        except:
-            raise exceptions.ClickupClientError(
-                "Invalid Json response", response.status_code, data={
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
-            )
+        except JSONDecodeError:
+            return self.__delete_request(model, *additionalpath)
+
         if response.status_code == 429:
             if self.retry_rate_limited_requests:
                 return self.__delete_request(model, *additionalpath)
