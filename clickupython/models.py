@@ -311,11 +311,9 @@ class Creator(BaseModel):
 
 class Option(BaseModel):
     id: Optional[str]
-
     name: Optional[str]
-
+    value: Optional[str] = None
     color: Optional[str]
-
     orderindex: Optional[int]
 
 
@@ -1172,6 +1170,7 @@ class WebhookEvent(enum.Enum):
 class WebhookHealthStatus(enum.Enum):
     active = "active"
     failing = "failing"
+    suspended = "suspended"
 
 
 class WebhookHealth(BaseModel):
