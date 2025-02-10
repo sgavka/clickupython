@@ -227,8 +227,8 @@ class CommentCommentAttachment(BaseModel):
     deleted: bool
     orientation: Optional[int]
     url: str
-    parent_comment_type: int
-    parent_comment_parent: str
+    parent_comment_type: Optional[int]
+    parent_comment_parent: Optional[str]
     email_data: Optional[dict]
     workspace_id: int
     url_w_query: str
