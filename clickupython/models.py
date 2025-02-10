@@ -133,17 +133,18 @@ class Checklists(BaseModel):
 
 class Attachment(BaseModel):
     id: str
-
     version: int
-    date: str
+    date: int
+    name: str
     title: str
-
     extension: str
-
-    thumbnail_small: str
-
-    thumbnail_large: str
+    source: int
+    thumbnail_small: Optional[str]
+    thumbnail_medium: Optional[str]
+    thumbnail_large: Optional[str]
     url: str
+    url_w_query: str
+    url_w_host: str
 
     def build_attachment(self):
         return Attachment(**self)

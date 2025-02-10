@@ -1,11 +1,11 @@
+import io
 import json
 import ntpath
-import os
 import urllib
 import urllib.parse
 from datetime import datetime
 from time import sleep
-from typing import List, Optional
+from typing import List, Optional, BinaryIO
 
 import requests
 from requests import JSONDecodeError
@@ -515,8 +515,11 @@ class ClickUpClient:
         deleted_folder_status = self.__delete_request(model, folder_id)
         return True
 
-    # Tasks
-    def upload_attachment(self, task_id: str, file_path: str) -> models.Attachment:
+    def upload_attachment(
+            self,
+            task_id: str,
+            file: io.BytesIO | BinaryIO,
+    ) -> models.Attachment:
         """Uploads an attachment to a ClickUp task.
 
         Args:
@@ -527,25 +530,23 @@ class ClickUpClient:
             :Attachment: Returns an attachment object.
         """
 
-        if os.path.exists(file_path):
+        files = [("attachment", (file.name, file.read()))]
+        data = {
+            "filename": ntpath.basename(file.name)
+        }
+        model = "task/" + task_id
+        uploaded_attachment = self.__post_request(
+            model, data, files, True, "attachment"
+        )
 
-            with open(file_path, "rb") as f:
-                files = [("attachment", (f.name, open(file_path, "rb")))]
-                data = {
-                    "filename": ntpath.basename(f.name)
-                }
-                model = "task/" + task_id
-                uploaded_attachment = self.__post_request(
-                    model, data, files, True, "attachment"
-                )
+        if uploaded_attachment:
+            final_attachment = models.Attachment.build_attachment(
+                uploaded_attachment
+            )
+            return final_attachment
 
-                if uploaded_attachment:
-                    final_attachment = models.Attachment.build_attachment(
-                        uploaded_attachment
-                    )
-                return final_attachment
-
-    def get_task(self,
+    def get_task(
+            self,
             task_id: str,
             include_subtasks: bool = False,
     ) -> models.Task:
