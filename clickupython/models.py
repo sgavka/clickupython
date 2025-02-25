@@ -774,13 +774,13 @@ class Tasks(BaseModel):
 
 
 class User(BaseModel):
-    id: str = None
+    id: Union[str, int] = None
     username: str = None
     initials: str = None
     email: str = None
     color: str = None
 
-    profilePicture: str = None
+    profilePicture: Optional[str] = None
 
     initials: Optional[str] = None
 
