@@ -1232,12 +1232,14 @@ class WebhookHistoryItem(BaseModel):
         list[str],
         list[CustomFieldValue],
         StatusTwo,
+        User,
     ]] = None
     after: Optional[Union[
         str,
         list[str],
         list[CustomFieldValue],
         StatusTwo,
+        User,
     ]] = None
     field: Optional[str] = None
     custom_field: Optional[CustomField] = None
