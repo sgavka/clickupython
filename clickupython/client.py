@@ -26,7 +26,9 @@ class ClickUpClient:
             retry_rate_limited_requests: bool = False,
             rate_limit_buffer_wait_time: int = 5,
             start_rate_limit_remaining: int = 100,
-            start_rate_limit_reset: float = datetime.now().timestamp()
+            start_rate_limit_reset: float = datetime.now().timestamp(),
+            request_exception_handler: Optional[callable] = None,
+            sleep_on_rate_limit_handler: Optional[callable] = None,
     ):
         self.api_url = api_url
         self.token = token
@@ -35,6 +37,8 @@ class ClickUpClient:
         self.rate_limit_reset = start_rate_limit_reset
         self.rate_limit_buffer_wait_time = rate_limit_buffer_wait_time
         self.retry_rate_limited_requests = retry_rate_limited_requests
+        self.request_exception_handler = request_exception_handler
+        self.sleep_on_rate_limit_handler = sleep_on_rate_limit_handler
 
     def __parse_response_rate_limit_headers(self, response: requests.Response):
         self.rate_limit_remaining = int(response.headers.get("x-ratelimit-remaining", 0))
@@ -46,7 +50,8 @@ class ClickUpClient:
                 self.rate_limit_reset + self.rate_limit_buffer_wait_time
             )
             seconds = (resume_time - datetime.now()).total_seconds()
-            print(f"Waiting for rate limit to reset for {seconds} seconds.")
+            if self.sleep_on_rate_limit_handler is not None:
+                self.sleep_on_rate_limit_handler(seconds, self)
             sleep(seconds)
 
     # Generates headers for use in GET, POST, DELETE, PUT requests
@@ -79,7 +84,9 @@ class ClickUpClient:
         self.request_count += 1
         try:
             response_json = response.json()
-        except JSONDecodeError:
+        except JSONDecodeError as e:
+            if self.request_exception_handler is not None:
+                self.request_exception_handler(e, response, self)
             return self.__get_request(model, *additionalpath)
 
         self.__parse_response_rate_limit_headers(response)
@@ -123,7 +130,9 @@ class ClickUpClient:
                 response = requests.post(path, headers=self.__headers(), data=data)
             try:
                 response_json = response.json()
-            except JSONDecodeError:
+            except JSONDecodeError as e:
+                if self.request_exception_handler is not None:
+                    self.request_exception_handler(e, response, self)
                 return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
 
             self.request_count += 1
@@ -156,7 +165,9 @@ class ClickUpClient:
             response = requests.post(path, headers=self.__headers())
             try:
                 response_json = response.json()
-            except JSONDecodeError:
+            except JSONDecodeError as e:
+                if self.request_exception_handler is not None:
+                    self.request_exception_handler(e, response, self)
                 return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
 
             self.request_count += 1
@@ -186,6 +197,8 @@ class ClickUpClient:
 
     # Performs a Put request to the ClickUp API
     def __put_request(self, model, data, *additionalpath):
+        self.__check_rate_limit()
+
         path = formatting.url_join(API_URL, model, *additionalpath)
         response = requests.put(path, headers=self.__headers(), data=data)
 
@@ -194,7 +207,9 @@ class ClickUpClient:
 
         try:
             response_json = response.json()
-        except JSONDecodeError:
+        except JSONDecodeError as e:
+            if self.request_exception_handler is not None:
+                self.request_exception_handler(e, response, self)
             return self.__put_request(model, data, *additionalpath)
 
         if response.status_code == 429:
@@ -209,8 +224,9 @@ class ClickUpClient:
                 }
             )
         elif response.status_code >= 400:
+            error = response_json.get("err", json.dumps(response_json))
             raise exceptions.ClickupClientError(
-                response_json["err"], response.status_code, data={
+                error, response.status_code, data={
                     'data': data,
                     'additionalpath': additionalpath,
                     'response': response.text,
@@ -230,7 +246,9 @@ class ClickUpClient:
 
         try:
             response_json = response.json()
-        except JSONDecodeError:
+        except JSONDecodeError as e:
+            if self.request_exception_handler is not None:
+                self.request_exception_handler(e, response, self)
             return self.__delete_request(model, *additionalpath)
 
         if response.status_code == 429:
