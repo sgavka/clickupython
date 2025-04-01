@@ -191,6 +191,7 @@ class CommentCommentType(enum.Enum):
     GIPHY = "giphy"
     VIEW_MENTION = "view_mention"
     BOOKMARK = "bookmark"
+    LINK_MENTION = "link_mention"
 
 
 class CommentCommentImage(BaseModel):
