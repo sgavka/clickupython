@@ -355,6 +355,10 @@ class CustomFieldValue(BaseModel):
     access: bool
 
 
+class CustomFieldValueSecond(BaseModel):
+    id: str
+
+
 class CustomField(BaseModel):
     id: str = None
     name: str = None
@@ -362,7 +366,7 @@ class CustomField(BaseModel):
     type_config: TypeConfig = None
     date_created: str = None
     hide_from_guests: bool = None
-    value: Optional[Union[str, int, dict, list[CustomFieldValue]]] = None
+    value: Optional[Union[str, int, dict, list[CustomFieldValue], list[CustomFieldValueSecond]]] = None
     value_richtext: Optional[str] = None
     required: Optional[bool] = None
 
