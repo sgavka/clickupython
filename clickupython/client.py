@@ -5,7 +5,7 @@ import urllib
 import urllib.parse
 from datetime import datetime
 from time import sleep
-from typing import List, Optional, BinaryIO
+from typing import Any, Dict, List, Optional, BinaryIO, Callable, Union, TypeVar
 
 import requests
 from requests import JSONDecodeError
@@ -27,9 +27,9 @@ class ClickUpClient:
             rate_limit_buffer_wait_time: int = 5,
             start_rate_limit_remaining: int = 100,
             start_rate_limit_reset: float = datetime.now().timestamp(),
-            request_exception_handler: Optional[callable] = None,
-            sleep_on_rate_limit_handler: Optional[callable] = None,
-    ):
+            request_exception_handler: Optional[Callable[[Exception, requests.Response, Any], None]] = None,
+            sleep_on_rate_limit_handler: Optional[Callable[[float, Any], None]] = None,
+    ) -> None:
         self.api_url = api_url
         self.token = token
         self.request_count = 0
@@ -40,11 +40,24 @@ class ClickUpClient:
         self.request_exception_handler = request_exception_handler
         self.sleep_on_rate_limit_handler = sleep_on_rate_limit_handler
 
-    def __parse_response_rate_limit_headers(self, response: requests.Response):
+    def __parse_response_rate_limit_headers(self, response: requests.Response) -> None:
+        """Parses rate limit headers from the response and updates instance variables.
+
+        Args:
+            response (requests.Response): The response from the API
+
+        Returns:
+            None
+        """
         self.rate_limit_remaining = int(response.headers.get("x-ratelimit-remaining", 0))
         self.rate_limit_reset = float(response.headers.get("x-ratelimit-reset", 0))
 
-    def __check_rate_limit(self):
+    def __check_rate_limit(self) -> None:
+        """Checks if the rate limit has been reached and sleeps if necessary.
+
+        Returns:
+            None
+        """
         if self.rate_limit_remaining <= 1:
             resume_time = datetime.fromtimestamp(
                 self.rate_limit_reset + self.rate_limit_buffer_wait_time
@@ -56,11 +69,14 @@ class ClickUpClient:
 
     # Generates headers for use in GET, POST, DELETE, PUT requests
 
-    def __headers(self, file_upload: bool = False):
+    def __headers(self, file_upload: bool = False) -> Dict[str, str]:
         """Internal method to generate headers for HTTP requests. Generates headers for use in GET, POST, DELETE and PUT requests.
 
+        Args:
+            file_upload (bool, optional): Whether this is a file upload request. Defaults to False.
+
         Returns:
-            :dict: Returns headers for HTTP requests
+            Dict[str, str]: Returns headers for HTTP requests
         """
 
         return (
@@ -74,202 +90,136 @@ class ClickUpClient:
             }
         )
 
-    def __get_request(self, model, *additionalpath) -> json:
-        """Performs a Get request to the ClickUp API"""
-        path = formatting.url_join(API_URL, model, *additionalpath)
+    def __request(self, method: str, model: str, data: Optional[str] = None, upload_files: Optional[Dict[str, Any]] = None, file_upload: bool = False, *additionalpath: str) -> Union[Dict[str, Any], int, None]:
+        """Performs an HTTP request to the ClickUp API
 
+        Args:
+            method (str): HTTP method (GET, POST, PUT, DELETE)
+            model (str): API model/endpoint
+            data (str, optional): JSON string for POST/PUT requests
+            upload_files (dict, optional): Files to upload for POST requests
+            file_upload (bool, optional): Whether this is a file upload request
+            *additionalpath: Additional path segments to append to the URL
+
+        Returns:
+            Union[Dict[str, Any], int, None]: Response data from the API, status code for DELETE requests, or None if the request fails
+        """
+        path = formatting.url_join(API_URL, model, *additionalpath)
         self.__check_rate_limit()
 
-        response = requests.get(path, headers=self.__headers())
+        # Prepare request arguments
+        request_kwargs = {"headers": self.__headers(file_upload if upload_files else False)}
+        if method in ["POST", "PUT"] and data:
+            request_kwargs["data"] = data
+        if method == "POST" and upload_files:
+            request_kwargs["files"] = upload_files
+
+        # Make the request
+        response = getattr(requests, method.lower())(path, **request_kwargs)
         self.request_count += 1
+
+        # Parse response
         try:
             response_json = response.json()
         except JSONDecodeError as e:
             if self.request_exception_handler is not None:
                 self.request_exception_handler(e, response, self)
-            return self.__get_request(model, *additionalpath)
+            return self.__request(method, model, data, upload_files, file_upload, *additionalpath)
 
         self.__parse_response_rate_limit_headers(response)
 
+        # Handle rate limiting
         if response.status_code == 429:
             if self.retry_rate_limited_requests:
-                return self.__get_request(model, *additionalpath)
+                return self.__request(method, model, data, upload_files, file_upload, *additionalpath)
+
+            error_data = {
+                'response': response.text,
+                'headers': dict(response.headers),
+                'additionalpath': additionalpath
+            }
+            if data:
+                error_data['data'] = data
+
             raise exceptions.ClickupClientError(
-                "Rate limit exceeded", response.status_code, data={
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
+                "Rate limit exceeded", response.status_code, data=error_data
             )
+
+        # Handle errors
         if response.status_code >= 400:
+            error_data = {
+                'response': response.text,
+                'headers': dict(response.headers),
+                'additionalpath': additionalpath
+            }
+            if data:
+                error_data['data'] = data
+
             error = response_json.get("err", json.dumps(response_json))
             raise exceptions.ClickupClientError(
-                error, response.status_code, data={
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
+                error, response.status_code, data=error_data
             )
+
+        # Return appropriate response
         if response.ok:
+            # DELETE requests return status code instead of JSON
+            if method == "DELETE":
+                return response.status_code
             return response_json
 
-    # Performs a Post request to the ClickUp API
-    def __post_request(
-            self, model, data, upload_files=None, file_upload=False, *additionalpath
-    ):
-        path = formatting.url_join(API_URL, model, *additionalpath)
+        return None
 
-        self.__check_rate_limit()
+    def __get_request(self, model: str, *additionalpath: str) -> Union[Dict[str, Any], None]:
+        """Performs a GET request to the ClickUp API
 
-        if data:
-            if upload_files:
-                response = requests.post(
-                    path, headers=self.__headers(True), data=data, files=upload_files
-                )
-            else:
-                response = requests.post(path, headers=self.__headers(), data=data)
-            try:
-                response_json = response.json()
-            except JSONDecodeError as e:
-                if self.request_exception_handler is not None:
-                    self.request_exception_handler(e, response, self)
-                return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
+        Args:
+            model (str): API model/endpoint
+            *additionalpath: Additional path segments to append to the URL
 
-            self.request_count += 1
-            self.__parse_response_rate_limit_headers(response)
+        Returns:
+            Union[Dict[str, Any], None]: Response data from the API or None if the request fails
+        """
+        return self.__request("GET", model, *additionalpath)
 
-            if response.status_code == 429:
-                if self.retry_rate_limited_requests:
-                    return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
-                raise exceptions.ClickupClientError(
-                    "Rate limit exceeded", response.status_code, data={
-                        'data': data,
-                        'additionalpath': additionalpath,
-                        'response': response.text,
-                        'headers': dict(response.headers),
-                    }
-                )
-            elif response.status_code >= 400:
-                error = response_json.get("err", json.dumps(response_json))
-                raise exceptions.ClickupClientError(
-                    error, response.status_code, data={
-                        'data': data,
-                        'additionalpath': additionalpath,
-                        'response': response.text,
-                        'headers': dict(response.headers),
-                    }
-                )
-            if response.ok:
-                return response_json
-        else:
-            response = requests.post(path, headers=self.__headers())
-            try:
-                response_json = response.json()
-            except JSONDecodeError as e:
-                if self.request_exception_handler is not None:
-                    self.request_exception_handler(e, response, self)
-                return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
+    def __post_request(self, model: str, data: Optional[str], upload_files: Optional[Dict[str, Any]] = None, file_upload: bool = False, *additionalpath: str) -> Union[Dict[str, Any], None]:
+        """Performs a POST request to the ClickUp API
 
-            self.request_count += 1
-            self.__parse_response_rate_limit_headers(response)
+        Args:
+            model (str): API model/endpoint
+            data (str, optional): JSON string for POST request
+            upload_files (dict, optional): Files to upload for POST requests
+            file_upload (bool, optional): Whether this is a file upload request
+            *additionalpath: Additional path segments to append to the URL
 
-            if response.status_code == 429:
-                if self.retry_rate_limited_requests:
-                    return self.__post_request(model, data, upload_files, file_upload, *additionalpath)
-                raise exceptions.ClickupClientError(
-                    "Rate limit exceeded", response.status_code, data={
-                        'data': data,
-                        'response': response.text,
-                        'headers': dict(response.headers),
-                    }
-                )
-            elif response.status_code >= 400:
-                error = response_json.get("err", json.dumps(response_json))
-                raise exceptions.ClickupClientError(
-                    error, response.status_code, data={
-                        'data': data,
-                        'response': response.text,
-                        'headers': dict(response.headers),
-                    }
-                )
-            if response.ok:
-                return response_json
+        Returns:
+            Union[Dict[str, Any], None]: Response data from the API or None if the request fails
+        """
+        return self.__request("POST", model, data, upload_files, file_upload, *additionalpath)
 
-    # Performs a Put request to the ClickUp API
-    def __put_request(self, model, data, *additionalpath):
-        self.__check_rate_limit()
+    def __put_request(self, model: str, data: Optional[str], *additionalpath: str) -> Union[Dict[str, Any], None]:
+        """Performs a PUT request to the ClickUp API
 
-        path = formatting.url_join(API_URL, model, *additionalpath)
-        response = requests.put(path, headers=self.__headers(), data=data)
+        Args:
+            model (str): API model/endpoint
+            data (str, optional): JSON string for PUT request
+            *additionalpath: Additional path segments to append to the URL
 
-        self.request_count += 1
-        self.__parse_response_rate_limit_headers(response)
+        Returns:
+            Union[Dict[str, Any], None]: Response data from the API or None if the request fails
+        """
+        return self.__request("PUT", model, data, *additionalpath)
 
-        try:
-            response_json = response.json()
-        except JSONDecodeError as e:
-            if self.request_exception_handler is not None:
-                self.request_exception_handler(e, response, self)
-            return self.__put_request(model, data, *additionalpath)
+    def __delete_request(self, model: str, *additionalpath: str) -> Union[Dict[str, Any], int, None]:
+        """Performs a DELETE request to the ClickUp API
 
-        if response.status_code == 429:
-            if self.retry_rate_limited_requests:
-                return self.__put_request(model, data, *additionalpath)
-            raise exceptions.ClickupClientError(
-                "Rate limit exceeded", response.status_code, data={
-                    'data': data,
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
-            )
-        elif response.status_code >= 400:
-            error = response_json.get("err", json.dumps(response_json))
-            raise exceptions.ClickupClientError(
-                error, response.status_code, data={
-                    'data': data,
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
-            )
-        if response.ok:
-            return response_json
+        Args:
+            model (str): API model/endpoint
+            *additionalpath: Additional path segments to append to the URL
 
-    # Performs a Delete request to the ClickUp API
-    def __delete_request(self, model, *additionalpath):
-        path = formatting.url_join(API_URL, model, *additionalpath)
-        response = requests.delete(path, headers=self.__headers())
-
-        self.request_count += 1
-        self.__parse_response_rate_limit_headers(response)
-
-        try:
-            response_json = response.json()
-        except JSONDecodeError as e:
-            if self.request_exception_handler is not None:
-                self.request_exception_handler(e, response, self)
-            return self.__delete_request(model, *additionalpath)
-
-        if response.status_code == 429:
-            if self.retry_rate_limited_requests:
-                return self.__delete_request(model, *additionalpath)
-            raise exceptions.ClickupClientError(
-                "Rate limit exceeded", response.status_code, data={
-                    'additionalpath': additionalpath,
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
-            )
-        elif response.ok:
-            return response.status_code
-        else:
-            raise exceptions.ClickupClientError(
-                response_json["err"], response.status_code, data={
-                    'response': response.text,
-                    'headers': dict(response.headers),
-                }
-            )
+        Returns:
+            Union[Dict[str, Any], int, None]: Response data from the API, status code, or None if the request fails
+        """
+        return self.__request("DELETE", model, *additionalpath)
 
     # Lists
     def get_list(self, list_id: str) -> models.SingleList:
@@ -422,7 +372,7 @@ class ClickUpClient:
             self,
             task_id: str,
             list_id: str,
-    ) -> models.Task:
+    ) -> bool:
         """Adds a task to a list via a gen task id and list id.
 
         Args:
@@ -430,7 +380,7 @@ class ClickUpClient:
             list_id (str): The id of the list to add the task to.
 
         Returns:
-            models.Task: Returns an object of type Task.
+            bool: Returns True if the task was successfully added to the list.
         """
         model = "list/"
         task = self.__post_request(model, None, None, False, list_id, "task", task_id)
@@ -523,11 +473,14 @@ class ClickUpClient:
         if updated_folder:
             return models.Folder.build_folder(updated_folder)
 
-    def delete_folder(self, folder_id: str) -> None:
+    def delete_folder(self, folder_id: str) -> bool:
         """Deletes a folder from a given folder ID.
 
         Args:
             :folder_id (str): The ID of the ClickUp folder to delete.
+
+        Returns:
+            bool: Returns True if the folder was successfully deleted.
         """
         model = "folder/"
         deleted_folder_status = self.__delete_request(model, folder_id)
@@ -806,16 +759,16 @@ class ClickUpClient:
             self,
             list_id: str,
             name: str,
-            description: str = None,
-            priority: int = None,
-            assignees: [] = None,
-            tags: [] = None,
-            status: str = None,
-            due_date: str = None,
-            start_date: str = None,
-            parent: str = None,
+            description: Optional[str] = None,
+            priority: Optional[int] = None,
+            assignees: Optional[List[str]] = None,
+            tags: Optional[List[str]] = None,
+            status: Optional[str] = None,
+            due_date: Optional[str] = None,
+            start_date: Optional[str] = None,
+            parent: Optional[str] = None,
             notify_all: bool = True,
-            custom_fields: List[models.CreateTaskCustomField] = None,
+            custom_fields: Optional[List[models.CreateTaskCustomField]] = None,
     ) -> models.Task:
 
         """[summary]
@@ -867,17 +820,17 @@ class ClickUpClient:
 
     def update_task(
             self,
-            task_id,
-            name: str = None,
-            description: str = None,
-            status: str = None,
-            priority: int = None,
-            time_estimate: int = None,
-            archived: bool = None,
-            add_assignees: List[str] = None,
-            remove_assignees: List[int] = None,
-            add_watchers: List[str] = None,
-            remove_watchers: List[int] = None,
+            task_id: str,
+            name: Optional[str] = None,
+            description: Optional[str] = None,
+            status: Optional[str] = None,
+            priority: Optional[int] = None,
+            time_estimate: Optional[int] = None,
+            archived: Optional[bool] = None,
+            add_assignees: Optional[List[str]] = None,
+            remove_assignees: Optional[List[int]] = None,
+            add_watchers: Optional[List[str]] = None,
+            remove_watchers: Optional[List[int]] = None,
     ) -> models.Task:
 
         """[summary]
@@ -975,11 +928,14 @@ class ClickUpClient:
         if updated_task:
             return models.Task.build_task(updated_task)
 
-    def delete_task(self, task_id: str) -> None:
+    def delete_task(self, task_id: str) -> bool:
         """Deletes a task via a given task ID.
 
         Args:
-            :folder_id (str): The ID of the ClickUp task to delete.
+            :task_id (str): The ID of the ClickUp task to delete.
+
+        Returns:
+            bool: Returns True if the task was successfully deleted.
         """
         model = "task/"
         deleted_task_status = self.__delete_request(model, task_id)
@@ -1117,21 +1073,22 @@ class ClickUpClient:
     def update_comment(
             self,
             comment_id: str,
-            comment_text: str = None,
+            comment_text: Optional[str] = None,
             comment: Optional[list[dict]] = None,
-            assignee: str = None,
-            resolved: bool = None,
+            assignee: Optional[str] = None,
+            resolved: Optional[bool] = None,
     ) -> bool:
         """Update a ClickUp comment's content, assignee and resolution status.
 
         Args:
             :comment_id (str): The id of the comment to update
             :comment_text (str, optional): The new content of the comment. Defaults to None.
+            :comment (list[dict], optional): The new content of the comment in structured format. Defaults to None.
             :assignee (str, optional): The id of an assignee. Defaults to None.
             :resolved (bool, optional): Comment resolution status. Defaults to None.
 
         Returns:
-            :models.Comment: [description]
+            :bool: Returns True if the comment was successfully updated.
         """
         arguments = {}
         arguments.update(vars().copy())
