@@ -226,11 +226,14 @@ class ClickUpClient:
             assignee: str = None,
             status: str = None,
     ) -> models.SingleList:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("space_id", None)
+        arguments = {
+            "name": name,
+            "content": content,
+            "due_date": due_date,
+            "priority": priority,
+            "assignee": assignee,
+            "status": status
+        }
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"space/{space_id}/list"
         created_list = self.__post_request(uri, final_dict)
@@ -258,11 +261,15 @@ class ClickUpClient:
         if due_date:
             due_date = fuzzy_time_to_unix(due_date)
 
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("list_id", None)
+        arguments = {
+            "name": name,
+            "content": content,
+            "due_date": due_date,
+            "due_date_time": due_date_time,
+            "priority": priority,
+            "assignee": assignee,
+            "unset_status": unset_status
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         print(final_dict)
@@ -634,11 +641,19 @@ class ClickUpClient:
         if custom_fields:
             custom_fields = [cf.model_dump(mode='json') for cf in custom_fields]
 
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("list_id", None)
+        arguments = {
+            "name": name,
+            "description": description,
+            "priority": priority,
+            "assignees": assignees,
+            "tags": tags,
+            "status": status,
+            "due_date": due_date,
+            "start_date": start_date,
+            "parent": parent,
+            "notify_all": notify_all,
+            "custom_fields": custom_fields
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"list/{list_id}/task"
@@ -688,15 +703,14 @@ class ClickUpClient:
                 "Priority must be in range of 0-4.", "Priority out of range"
             )
 
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("task_id", None)
-        arguments.pop("add_assignees", None)
-        arguments.pop("remove_assignees", None)
-        arguments.pop("add_watchers", None)
-        arguments.pop("remove_watchers", None)
+        arguments = {
+            "name": name,
+            "description": description,
+            "status": status,
+            "priority": priority,
+            "time_estimate": time_estimate,
+            "archived": archived
+        }
 
         if add_assignees and remove_assignees:
             arguments.update(
@@ -844,11 +858,12 @@ class ClickUpClient:
             assignee: Optional[str] = None,
             resolved: Optional[bool] = None,
     ) -> bool:
-        arguments = {}
-        arguments.update(vars().copy())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("comment_id", None)
+        arguments = {
+            "comment_text": comment_text,
+            "comment": comment,
+            "assignee": assignee,
+            "resolved": resolved
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"comment/{comment_id}"
@@ -892,11 +907,10 @@ class ClickUpClient:
             comment_text: str,
             notify_all: bool = True,
     ) -> models.Comment:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("view_id", None)
+        arguments = {
+            "comment_text": comment_text,
+            "notify_all": notify_all
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"view/{view_id}/comment"
@@ -969,12 +983,11 @@ class ClickUpClient:
             resolved: bool = None,
             parent: str = None,
     ) -> models.Checklist:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("checklist_id", None)
-        arguments.pop("checklist_item_id", None)
+        arguments = {
+            "name": name,
+            "resolved": resolved,
+            "parent": parent
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"checklist/{checklist_id}/checklist_item/{checklist_item_id}"
@@ -1006,12 +1019,13 @@ class ClickUpClient:
             owners: List[int] = None,
             color: str = None,
     ) -> models.Goal:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("team_id", None)
-        arguments.pop("owners", None)
+        arguments = {
+            "name": name,
+            "due_date": due_date,
+            "description": description,
+            "multiple_owners": multiple_owners,
+            "color": color
+        }
 
         if multiple_owners and owners:
             arguments.update({"owners": owners})
@@ -1032,11 +1046,14 @@ class ClickUpClient:
             add_owners: List[str] = None,
             color: str = None,
     ) -> models.Goal:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("goal_id", None)
+        arguments = {
+            "name": name,
+            "due_date": due_date,
+            "description": description,
+            "rem_owners": rem_owners,
+            "add_owners": add_owners,
+            "color": color
+        }
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"goal/{goal_id}"
@@ -1073,11 +1090,9 @@ class ClickUpClient:
             return final_tags
 
     def create_space_tag(self, space_id, name: str) -> models.Tag:
-        arguments = {}
-        arguments.update(vars())
-        arguments.pop("self", None)
-        arguments.pop("arguments", None)
-        arguments.pop("space_id", None)
+        arguments = {
+            "name": name
+        }
 
         final_dict = {k: v for k, v in arguments.items() if v is not None}
         final_tag = json.dumps({"tag": final_dict})
