@@ -91,7 +91,7 @@ class ClickUpClient:
         )
 
     def __request(
-            self, method: str, uri: str, data: Optional[str] = None, upload_files: Optional[Dict[str, Any]] = None,
+            self, method: str, uri: str, data: Optional[dict] = None, upload_files: Optional[Dict[str, Any]] = None,
             file_upload: bool = False) -> Union[Dict[str, Any], int, None]:
         """Performs an HTTP request to the ClickUp API
 
@@ -113,7 +113,7 @@ class ClickUpClient:
             "headers": self.__headers(file_upload if upload_files else False)
         }
         if method in ["POST", "PUT"] and data:
-            request_kwargs["data"] = data
+            request_kwargs["json"] = data
         if method == "POST" and upload_files:
             request_kwargs["files"] = upload_files
 
@@ -176,11 +176,15 @@ class ClickUpClient:
         return self.__request("GET", uri)
 
     def __post_request(
-            self, uri: str, data: Optional[str], upload_files: Optional[Dict[str, Any]] = None,
-            file_upload: bool = False) -> Union[Dict[str, Any], None]:
+            self,
+            uri: str,
+            data: Optional[dict],
+            upload_files: Optional[Dict[str, Any]] = None,
+            file_upload: bool = False
+    ) -> Union[Dict[str, Any], None]:
         return self.__request("POST", uri, data, upload_files, file_upload)
 
-    def __put_request(self, uri: str, data: Optional[str]) -> Union[Dict[str, Any], None]:
+    def __put_request(self, uri: str, data: Optional[dict]) -> Union[Dict[str, Any], None]:
         return self.__request("PUT", uri, data)
 
     def __delete_request(self, uri: str) -> Union[Dict[str, Any], int, None]:
@@ -218,7 +222,7 @@ class ClickUpClient:
             "status": status,
         }
         uri = f"folder/{folder_id}/list"
-        created_list = self.__post_request(uri, json.dumps(data))
+        created_list = self.__post_request(uri, data)
         if created_list:
             return models.SingleList.build_list(created_list)
 
@@ -240,7 +244,7 @@ class ClickUpClient:
             "assignee": assignee,
             "status": status
         }
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"space/{space_id}/list"
         created_list = self.__post_request(uri, final_dict)
         if created_list:
@@ -277,7 +281,7 @@ class ClickUpClient:
             "unset_status": unset_status
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         print(final_dict)
         uri = f"list/{list_id}"
         updated_list = self.__put_request(uri, final_dict)
@@ -324,7 +328,7 @@ class ClickUpClient:
             "name": name
         }
         uri = f"space/{space_id}/folder"
-        created_folder = self.__post_request(uri, json.dumps(data))
+        created_folder = self.__post_request(uri, data)
         if created_folder:
             return models.Folder.build_folder(created_folder)
 
@@ -333,7 +337,7 @@ class ClickUpClient:
             "name": name
         }
         uri = f"folder/{folder_id}"
-        updated_folder = self.__put_request(uri, json.dumps(data))
+        updated_folder = self.__put_request(uri, data)
         if updated_folder:
             return models.Folder.build_folder(updated_folder)
 
@@ -346,6 +350,7 @@ class ClickUpClient:
             self,
             task_id: str,
             file: io.BytesIO | BinaryIO,
+            file_type: Optional[str] = None,
     ) -> Optional[models.Attachment]:
         """Uploads an attachment to a ClickUp task.
 
@@ -356,12 +361,12 @@ class ClickUpClient:
         Returns:
             :Attachment: Returns an attachment object.
         """
-        files = [("attachment", (file.name, file.read()))]
+        files = [("attachment", (file.name, file.read(), file_type))]
         data = {
-            "filename": ntpath.basename(file.name)
+            "filename": ntpath.basename(file.name),
         }
         uri = f"task/{task_id}/attachment"
-        uploaded_attachment = self.__post_request(uri, json.dumps(data), files, True)
+        uploaded_attachment = self.__post_request(uri, data, files, True)
 
         if uploaded_attachment:
             final_attachment = models.Attachment.build_attachment(uploaded_attachment)
@@ -665,7 +670,7 @@ class ClickUpClient:
             "custom_fields": custom_fields
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"list/{list_id}/task"
         created_task = self.__post_request(uri, final_dict)
 
@@ -774,7 +779,7 @@ class ClickUpClient:
                 }
             )
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"task/{task_id}"
         updated_task = self.__put_request(uri, final_dict)
         if updated_task:
@@ -856,7 +861,7 @@ class ClickUpClient:
             data["group_assignee"] = group_assignee
 
         uri = f"comment/{comment_id}/reply"
-        created_comment = self.__post_request(uri, json.dumps(data))
+        created_comment = self.__post_request(uri, data)
 
         final_comment = models.Comment.build_comment(created_comment)
         if final_comment:
@@ -877,7 +882,7 @@ class ClickUpClient:
             "resolved": resolved
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"comment/{comment_id}"
         self.__put_request(uri, final_dict)
         return True
@@ -909,7 +914,7 @@ class ClickUpClient:
             data["comment"] = comment
 
         uri = f"task/{task_id}/comment"
-        created_comment = self.__post_request(uri, json.dumps(data))
+        created_comment = self.__post_request(uri, data)
 
         final_comment = models.Comment.build_comment(created_comment)
         if final_comment:
@@ -926,7 +931,7 @@ class ClickUpClient:
             "notify_all": notify_all
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"view/{view_id}/comment"
         created_comment = self.__post_request(uri, final_dict)
 
@@ -948,7 +953,7 @@ class ClickUpClient:
             "name": name
         }
         uri = f"task/{task_id}/checklist"
-        created_checklist = self.__post_request(uri, json.dumps(data))
+        created_checklist = self.__post_request(uri, data)
         return models.Checklists.build_checklist(created_checklist)
 
     def create_checklist_item(
@@ -961,7 +966,7 @@ class ClickUpClient:
             "name": name
         }
         uri = f"checklist/{checklist_id}/checklist_item"
-        created_checklist = self.__post_request(uri, json.dumps(data))
+        created_checklist = self.__post_request(uri, data)
         return models.Checklists.build_checklist(created_checklist)
 
     def update_checklist(
@@ -977,7 +982,7 @@ class ClickUpClient:
             data["position"] = position
 
         uri = f"checklist/{checklist_id}"
-        updated_checklist = self.__put_request(uri, json.dumps(data))
+        updated_checklist = self.__put_request(uri, data)
         if updated_checklist:
             return models.Checklists.build_checklist(updated_checklist)
 
@@ -1005,7 +1010,7 @@ class ClickUpClient:
             "parent": parent
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"checklist/{checklist_id}/checklist_item/{checklist_item_id}"
         item_update = self.__put_request(uri, final_dict)
 
@@ -1048,9 +1053,9 @@ class ClickUpClient:
                 {
                     "owners": owners
                 }
-                )
+            )
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"team/{team_id}/goal"
         created_goal = self.__post_request(uri, final_dict)
         if created_goal:
@@ -1075,7 +1080,7 @@ class ClickUpClient:
             "color": color
         }
 
-        final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
+        final_dict = {k: v for k, v in arguments.items() if v is not None}
         uri = f"goal/{goal_id}"
         updated_goal = self.__put_request(uri, final_dict)
         if updated_goal:
@@ -1115,11 +1120,9 @@ class ClickUpClient:
         }
 
         final_dict = {k: v for k, v in arguments.items() if v is not None}
-        final_tag = json.dumps(
-            {
-                "tag": final_dict
-            }
-            )
+        final_tag = {
+            "tag": final_dict
+        }
 
         uri = f"space/{space_id}/tag"
         created_tag = self.__post_request(uri, final_tag)
@@ -1140,13 +1143,11 @@ class ClickUpClient:
     def create_space(
             self, team_id: str, name: str, features: models.Features
     ) -> Optional[models.Space]:
-        final_dict = json.dumps(
-            {
-                "name": name,
-                "multiple_assignees": features.multiple_assignees,
-                "features": features.all_features,
-            }
-        )
+        final_dict = {
+            "name": name,
+            "multiple_assignees": features.multiple_assignees,
+            "features": features.all_features,
+        }
 
         uri = f"team/{team_id}/space"
         created_space = self.__post_request(uri, final_dict)
