@@ -5,7 +5,7 @@ import urllib
 import urllib.parse
 from datetime import datetime
 from time import sleep
-from typing import Any, Dict, List, Optional, BinaryIO, Callable, Union, TypeVar
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Union
 
 import requests
 from requests import JSONDecodeError
@@ -90,7 +90,9 @@ class ClickUpClient:
             }
         )
 
-    def __request(self, method: str, uri: str, data: Optional[str] = None, upload_files: Optional[Dict[str, Any]] = None, file_upload: bool = False) -> Union[Dict[str, Any], int, None]:
+    def __request(
+            self, method: str, uri: str, data: Optional[str] = None, upload_files: Optional[Dict[str, Any]] = None,
+            file_upload: bool = False) -> Union[Dict[str, Any], int, None]:
         """Performs an HTTP request to the ClickUp API
 
         Args:
@@ -107,7 +109,9 @@ class ClickUpClient:
         self.__check_rate_limit()
 
         # Prepare request arguments
-        request_kwargs = {"headers": self.__headers(file_upload if upload_files else False)}
+        request_kwargs = {
+            "headers": self.__headers(file_upload if upload_files else False)
+        }
         if method in ["POST", "PUT"] and data:
             request_kwargs["data"] = data
         if method == "POST" and upload_files:
@@ -171,7 +175,9 @@ class ClickUpClient:
     def __get_request(self, uri: str) -> Union[Dict[str, Any], None]:
         return self.__request("GET", uri)
 
-    def __post_request(self, uri: str, data: Optional[str], upload_files: Optional[Dict[str, Any]] = None, file_upload: bool = False) -> Union[Dict[str, Any], None]:
+    def __post_request(
+            self, uri: str, data: Optional[str], upload_files: Optional[Dict[str, Any]] = None,
+            file_upload: bool = False) -> Union[Dict[str, Any], None]:
         return self.__request("POST", uri, data, upload_files, file_upload)
 
     def __put_request(self, uri: str, data: Optional[str]) -> Union[Dict[str, Any], None]:
@@ -204,7 +210,7 @@ class ClickUpClient:
             due_date: str,
             priority: int,
             status: str,
-    ) -> models.SingleList:
+    ) -> Optional[models.SingleList]:
         data = {
             "name": name,
             "content": content,
@@ -225,7 +231,7 @@ class ClickUpClient:
             priority: int = None,
             assignee: str = None,
             status: str = None,
-    ) -> models.SingleList:
+    ) -> Optional[models.SingleList]:
         arguments = {
             "name": name,
             "content": content,
@@ -251,7 +257,7 @@ class ClickUpClient:
             priority: int = None,
             assignee: str = None,
             unset_status: bool = None,
-    ) -> models.SingleList:
+    ) -> Optional[models.SingleList]:
 
         if priority and priority not in range(1, 4):
             raise exceptions.ClickupClientError(
@@ -301,27 +307,31 @@ class ClickUpClient:
 
     # Folders
 
-    def get_folder(self, folder_id: str) -> models.Folder:
+    def get_folder(self, folder_id: str) -> Optional[models.Folder]:
         uri = f"folder/{folder_id}"
         fetched_folder = self.__get_request(uri)
         if fetched_folder:
             return models.Folder.build_folder(fetched_folder)
 
-    def get_folders(self, space_id: str) -> models.Folders:
+    def get_folders(self, space_id: str) -> Optional[models.Folders]:
         uri = f"space/{space_id}/folder"
         fetched_folders = self.__get_request(uri)
         if fetched_folders:
             return models.Folders.build_folders(fetched_folders)
 
-    def create_folder(self, space_id: str, name: str) -> models.Folder:
-        data = {"name": name}
+    def create_folder(self, space_id: str, name: str) -> Optional[models.Folder]:
+        data = {
+            "name": name
+        }
         uri = f"space/{space_id}/folder"
         created_folder = self.__post_request(uri, json.dumps(data))
         if created_folder:
             return models.Folder.build_folder(created_folder)
 
-    def update_folder(self, folder_id: str, name: str) -> models.Folder:
-        data = {"name": name}
+    def update_folder(self, folder_id: str, name: str) -> Optional[models.Folder]:
+        data = {
+            "name": name
+        }
         uri = f"folder/{folder_id}"
         updated_folder = self.__put_request(uri, json.dumps(data))
         if updated_folder:
@@ -336,7 +346,7 @@ class ClickUpClient:
             self,
             task_id: str,
             file: io.BytesIO | BinaryIO,
-    ) -> models.Attachment:
+    ) -> Optional[models.Attachment]:
         """Uploads an attachment to a ClickUp task.
 
         Args:
@@ -361,7 +371,7 @@ class ClickUpClient:
             self,
             task_id: str,
             include_subtasks: bool = False,
-    ) -> models.Task:
+    ) -> Optional[models.Task]:
         """Fetches a single ClickUp task item and returns a Task object.
 
         Args:
@@ -405,7 +415,7 @@ class ClickUpClient:
             date_created_lt: str = None,
             date_updated_gt: str = None,
             date_updated_lt: str = None,
-    ) -> models.Tasks:
+    ) -> Optional[models.Tasks]:
         """Gets filtered tasks for a team.
 
         Args:
@@ -505,7 +515,7 @@ class ClickUpClient:
             date_updated_lt: str = None,
             custom_fields: List[models.CustomFieldFilter] = None,
             custom_field: models.CustomFieldFilter = None,
-    ) -> models.Tasks:
+    ) -> Optional[models.Tasks]:
 
         """The maximum number of tasks returned in this response is 100. When you are paging this request, you should check list limit
         against the length of each response to determine if you are on the last page.
@@ -608,7 +618,7 @@ class ClickUpClient:
             parent: Optional[str] = None,
             notify_all: bool = True,
             custom_fields: Optional[List[models.CreateTaskCustomField]] = None,
-    ) -> models.Task:
+    ) -> Optional[models.Task]:
 
         """[summary]
 
@@ -675,7 +685,7 @@ class ClickUpClient:
             remove_assignees: Optional[List[int]] = None,
             add_watchers: Optional[List[str]] = None,
             remove_watchers: Optional[List[int]] = None,
-    ) -> models.Task:
+    ) -> Optional[models.Task]:
 
         """[summary]
 
@@ -776,14 +786,14 @@ class ClickUpClient:
         return True
 
     # Comments
-    def get_task_comments(self, task_id: str) -> models.Comments:
+    def get_task_comments(self, task_id: str) -> Optional[models.Comments]:
         uri = f"task/{task_id}/comment"
         fetched_comments = self.__get_request(uri)
         final_comments = models.Comments.build_comments(fetched_comments)
         if final_comments:
             return final_comments
 
-    def get_list_comments(self, list_id: str) -> models.Comments:
+    def get_list_comments(self, list_id: str) -> Optional[models.Comments]:
         uri = f"list/{list_id}/comment"
         fetched_comments = self.__get_request(uri)
         final_comments = models.Comments.build_comments(fetched_comments)
@@ -795,7 +805,7 @@ class ClickUpClient:
             view_id: str,
             start_from: Optional[datetime] = None,
             start_from_id: Optional[int] = None,
-    ) -> models.Comments:
+    ) -> Optional[models.Comments]:
         query = {}
         if start_from:
             query["start"] = start_from.timestamp()
@@ -812,7 +822,7 @@ class ClickUpClient:
         if final_comments:
             return final_comments
 
-    def get_threaded_comments(self, comment_id: str) -> models.Comments:
+    def get_threaded_comments(self, comment_id: str) -> Optional[models.Comments]:
         uri = f"comment/{comment_id}/reply"
         fetched_comments = self.__get_request(uri)
         final_comments = models.Comments.build_comments(fetched_comments)
@@ -827,13 +837,15 @@ class ClickUpClient:
             assignee: Optional[int] = None,
             group_assignee: Optional[int] = None,
             notify_all: Optional[bool] = True,
-    ) -> models.Comment:
+    ) -> Optional[models.Comment]:
         if comment_text is None and comment is None:
             raise exceptions.ClickupClientError(
                 "Either comment_text or comment must be supplied.", "No comment supplied"
             )
 
-        data = {"notify_all": notify_all}
+        data = {
+            "notify_all": notify_all
+        }
         if comment_text:
             data["comment_text"] = comment_text
         if comment:
@@ -882,13 +894,15 @@ class ClickUpClient:
             comment: Optional[list[dict]] = None,
             assignee: str = None,
             notify_all: bool = True,
-    ) -> models.Comment:
+    ) -> Optional[models.Comment]:
         if comment_text is None and comment is None:
             raise exceptions.ClickupClientError(
                 "Either comment_text or comment must be supplied.", "No comment supplied"
             )
 
-        data = {"notify_all": notify_all}
+        data = {
+            "notify_all": notify_all
+        }
         if comment_text:
             data["comment_text"] = comment_text
         if comment:
@@ -906,7 +920,7 @@ class ClickUpClient:
             view_id: str,
             comment_text: str,
             notify_all: bool = True,
-    ) -> models.Comment:
+    ) -> Optional[models.Comment]:
         arguments = {
             "comment_text": comment_text,
             "notify_all": notify_all
@@ -921,7 +935,7 @@ class ClickUpClient:
             return final_comment
 
     # Teams
-    def get_teams(self) -> models.Teams:
+    def get_teams(self) -> Optional[models.Teams]:
         uri = "team"
         fetched_teams = self.__get_request(uri)
         final_teams = models.Teams.build_teams(fetched_teams)
@@ -929,15 +943,17 @@ class ClickUpClient:
             return final_teams
 
     # Checklists
-    def create_checklist(self, task_id: str, name: str) -> models.Checklist:
-        data = {"name": name}
+    def create_checklist(self, task_id: str, name: str) -> Optional[models.Checklist]:
+        data = {
+            "name": name
+        }
         uri = f"task/{task_id}/checklist"
         created_checklist = self.__post_request(uri, json.dumps(data))
         return models.Checklists.build_checklist(created_checklist)
 
     def create_checklist_item(
             self, checklist_id: str, name: str, assignee: str = None
-    ) -> models.Checklist:
+    ) -> Optional[models.Checklist]:
         data = {
             "name": name,
             "assignee": assignee
@@ -950,7 +966,7 @@ class ClickUpClient:
 
     def update_checklist(
             self, checklist_id: str, name: str = None, position: int = None
-    ) -> models.Checklist:
+    ) -> Optional[models.Checklist]:
         if not name and not position:
             return
 
@@ -982,7 +998,7 @@ class ClickUpClient:
             name: str = None,
             resolved: bool = None,
             parent: str = None,
-    ) -> models.Checklist:
+    ) -> Optional[models.Checklist]:
         arguments = {
             "name": name,
             "resolved": resolved,
@@ -998,12 +1014,12 @@ class ClickUpClient:
             return final_update
 
     # Members
-    def get_task_members(self, task_id: str) -> models.Members:
+    def get_task_members(self, task_id: str) -> Optional[models.Members]:
         uri = f"task/{task_id}/member"
         task_members = self.__get_request(uri)
         return models.Members.build_members(task_members)
 
-    def get_list_members(self, list_id: str) -> models.Members:
+    def get_list_members(self, list_id: str) -> Optional[models.Members]:
         uri = f"list/{list_id}/member"
         task_members = self.__get_request(uri)
         return models.Members.build_members(task_members)
@@ -1018,7 +1034,7 @@ class ClickUpClient:
             multiple_owners: bool = True,
             owners: List[int] = None,
             color: str = None,
-    ) -> models.Goal:
+    ) -> Optional[models.Goal]:
         arguments = {
             "name": name,
             "due_date": due_date,
@@ -1028,7 +1044,11 @@ class ClickUpClient:
         }
 
         if multiple_owners and owners:
-            arguments.update({"owners": owners})
+            arguments.update(
+                {
+                    "owners": owners
+                }
+                )
 
         final_dict = json.dumps({k: v for k, v in arguments.items() if v is not None})
         uri = f"team/{team_id}/goal"
@@ -1045,7 +1065,7 @@ class ClickUpClient:
             rem_owners: List[str] = None,
             add_owners: List[str] = None,
             color: str = None,
-    ) -> models.Goal:
+    ) -> Optional[models.Goal]:
         arguments = {
             "name": name,
             "due_date": due_date,
@@ -1066,14 +1086,14 @@ class ClickUpClient:
         self.__delete_request(uri)
         return True
 
-    def get_goal(self, goal_id: str) -> models.Goal:
+    def get_goal(self, goal_id: str) -> Optional[models.Goal]:
         uri = f"goal/{goal_id}"
         fetched_goal = self.__get_request(uri)
         final_goal = models.Goals.build_goals(fetched_goal)
         if final_goal:
             return final_goal
 
-    def get_goals(self, team_id: str, include_completed: bool = False) -> models.Goals:
+    def get_goals(self, team_id: str, include_completed: bool = False) -> Optional[models.Goals]:
         query_param = "?include_completed=true" if include_completed else "?include_completed=false"
         uri = f"team/{team_id}/goal{query_param}"
         fetched_goals = self.__get_request(uri)
@@ -1082,32 +1102,36 @@ class ClickUpClient:
             return final_goals
 
     # Tags
-    def get_space_tags(self, space_id: str) -> models.Tags:
+    def get_space_tags(self, space_id: str) -> Optional[models.Tags]:
         uri = f"space/{space_id}/tag"
         fetched_tags = self.__get_request(uri)
         final_tags = models.Tags.build_tags(fetched_tags)
         if final_tags:
             return final_tags
 
-    def create_space_tag(self, space_id, name: str) -> models.Tag:
+    def create_space_tag(self, space_id, name: str) -> Optional[models.Tag]:
         arguments = {
             "name": name
         }
 
         final_dict = {k: v for k, v in arguments.items() if v is not None}
-        final_tag = json.dumps({"tag": final_dict})
+        final_tag = json.dumps(
+            {
+                "tag": final_dict
+            }
+            )
 
         uri = f"space/{space_id}/tag"
         created_tag = self.__post_request(uri, final_tag)
         print(created_tag)
         return True
 
-    def tag_task(self, task_id: str, tag_name: str):
+    def tag_task(self, task_id: str, tag_name: str) -> bool:
         uri = f"task/{task_id}/tag/{tag_name}"
         self.__post_request(uri, None)
         return True
 
-    def untag_task(self, task_id: str, tag_name: str):
+    def untag_task(self, task_id: str, tag_name: str) -> bool:
         uri = f"task/{task_id}/tag/{tag_name}"
         self.__delete_request(uri)
         return True
@@ -1115,7 +1139,7 @@ class ClickUpClient:
     # Spaces
     def create_space(
             self, team_id: str, name: str, features: models.Features
-    ) -> models.Space:
+    ) -> Optional[models.Space]:
         final_dict = json.dumps(
             {
                 "name": name,
@@ -1130,18 +1154,18 @@ class ClickUpClient:
         if created_space:
             return models.Space.build_space(created_space)
 
-    def delete_space(self, space_id: str):
+    def delete_space(self, space_id: str) -> bool:
         uri = f"space/{space_id}"
         self.__delete_request(uri)
         return True
 
-    def get_space(self, space_id: str):
+    def get_space(self, space_id: str) -> Optional[models.Space]:
         uri = f"space/{space_id}"
         fetched_space = self.__get_request(uri)
         if fetched_space:
             return models.Space.build_space(fetched_space)
 
-    def get_spaces(self, team_id: str, archived: bool = False):
+    def get_spaces(self, team_id: str, archived: bool = False) -> Optional[models.Spaces]:
         query_param = "?archived=true" if archived else "?archived=false"
         uri = f"team/{team_id}/space{query_param}"
         fetched_spaces = self.__get_request(uri)
@@ -1149,7 +1173,7 @@ class ClickUpClient:
             return models.Spaces.build_spaces(fetched_spaces)
 
     # Shared Hierarchy
-    def get_shared_hierarchy(self, team_id: str) -> models.SharedHierarchy:
+    def get_shared_hierarchy(self, team_id: str) -> Optional[models.SharedHierarchy]:
         uri = f"team/{team_id}/shared"
         fetched_hierarchy = self.__get_request(uri)
         print(fetched_hierarchy)
@@ -1163,7 +1187,7 @@ class ClickUpClient:
             start_date: str = None,
             end_date: str = None,
             assignees: List[str] = None,
-    ) -> models.TimeTrackingData:
+    ) -> Optional[models.TimeTrackingData]:
         startdate = "start_date="
         enddate = "end_date="
         assignees_temp = "assignee="
@@ -1187,38 +1211,38 @@ class ClickUpClient:
 
     def get_single_time_entry(
             self, team_id: str, timer_id: str
-    ) -> models.TimeTrackingData:
+    ) -> Optional[models.TimeTrackingData]:
         uri = f"team/{team_id}/time_entries/{timer_id}"
         fetched_time_data = self.__get_request(uri)
         print(fetched_time_data)
         if fetched_time_data:
             return models.TimeTrackingDataSingle.build_data(fetched_time_data)
 
-    def start_timer(self, team_id: str, timer_id: str) -> models.TimeTrackingData:
+    def start_timer(self, team_id: str, timer_id: str) -> Optional[models.TimeTrackingData]:
         uri = f"team/{team_id}/time_entries/start/{timer_id}"
         fetched_time_data = self.__post_request(uri, None)
         if fetched_time_data:
             return models.TimeTrackingDataSingle.build_data(fetched_time_data)
 
-    def stop_timer(self, team_id: str) -> models.TimeTrackingData:
+    def stop_timer(self, team_id: str) -> Optional[models.TimeTrackingData]:
         uri = f"team/{team_id}/time_entries/stop"
         fetched_time_data = self.__post_request(uri, None)
         if fetched_time_data:
             return models.TimeTrackingDataSingle.build_data(fetched_time_data)
 
-    def get_list_views(self, list_id: str) -> models.Views:
+    def get_list_views(self, list_id: str) -> Optional[models.Views]:
         uri = f"list/{list_id}/view"
         fetched_views = self.__get_request(uri)
         if fetched_views:
             return models.Views.build_views(fetched_views)
 
-    def get_webhooks(self, team_id: int) -> models.Webhooks:
+    def get_webhooks(self, team_id: int) -> Optional[models.Webhooks]:
         uri = f"team/{str(team_id)}/webhook"
         fetched_webhooks = self.__get_request(uri)
         if fetched_webhooks:
             return models.Webhooks.build_webhooks(fetched_webhooks)
 
-    def create_webhook(self, team_id: int, create_webhook: models.CreateWebhook) -> models.Webhook:
+    def create_webhook(self, team_id: int, create_webhook: models.CreateWebhook) -> Optional[models.Webhook]:
         uri = f"team/{str(team_id)}/webhook"
         created_webhook = self.__post_request(uri, create_webhook.model_dump_json())
         if created_webhook:
