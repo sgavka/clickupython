@@ -199,13 +199,13 @@ class CommentCommentImage(BaseModel):
     id: str
     name: str
     title: str
-    type: str
+    type: Optional[str] = None
     extension: str
     thumbnail_large: str
     thumbnail_medium: str
     thumbnail_small: str
     url: str
-    uploaded: bool
+    uploaded: Optional[bool] = None
 
 
 class CommentCommentAttachment(BaseModel):
