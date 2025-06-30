@@ -673,7 +673,7 @@ class ClickUpClient:
         created_task = self.__post_request(uri, final_dict)
 
         if created_task:
-            return models.Task.build(created_task)
+            return models.Task(**created_task)
 
     def update_task(
             self,
@@ -781,7 +781,7 @@ class ClickUpClient:
         uri = f"task/{task_id}"
         updated_task = self.__put_request(uri, final_dict)
         if updated_task:
-            return models.Task.build(updated_task)
+            return models.Task(**updated_task)
 
     def delete_task(self, task_id: str) -> bool:
         uri = f"task/{task_id}"
