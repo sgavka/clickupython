@@ -24,6 +24,7 @@ def mock_response_with_json(json_data: dict, status_code: int = 200, headers: Op
     mock_response.status_code = status_code
     mock_response.json.return_value = json_data
     mock_response.headers = headers
+    mock_response.ok = status_code < 400
     return mock_response
 
 
@@ -45,3 +46,30 @@ class TestClientGetTask(unittest.TestCase):
         self.assertEqual(result.status.status, "TODO")
 
         mock_get.assert_called_once()
+
+
+class TestClientAddTaskLink(unittest.TestCase):
+    @patch('requests.post')
+    def test_add_task_link(self, mock_post: MagicMock):
+        # Arrange
+        task_id = "task123"
+        links_to = "task456"
+
+        # Mock response with a task object
+        mock_response_data = {
+            "task": load_asset('get_task_000000000_response')
+        }
+        mock_post.return_value = mock_response_with_json(mock_response_data)
+
+        client = ClickUpClient(token="fake_api_key")
+
+        # Act
+        result = client.add_task_link(task_id=task_id, links_to=links_to)
+
+        # Assert
+        self.assertTrue(result)
+        mock_post.assert_called_once()
+
+        # Verify the correct URL was called
+        args, kwargs = mock_post.call_args
+        self.assertIn(f"task/{task_id}/link/{links_to}", args[0])
