@@ -1,0 +1,7 @@
+services:
+  code:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - .:/code

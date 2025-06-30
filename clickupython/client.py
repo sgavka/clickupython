@@ -376,7 +376,7 @@ class ClickUpClient:
             self,
             task_id: str,
             include_subtasks: bool = False,
-    ) -> Optional[models.Task]:
+    ) -> models.Task:
         """Fetches a single ClickUp task item and returns a Task object.
 
         Args:
@@ -396,9 +396,7 @@ class ClickUpClient:
 
         uri = f"task/{task_id}{get_part}"
         fetched_task = self.__get_request(uri)
-        final_task = models.Task.build_task(fetched_task)
-        if final_task:
-            return final_task
+        return models.Task(**fetched_task)
 
     def get_team_tasks(
             self,
@@ -675,7 +673,7 @@ class ClickUpClient:
         created_task = self.__post_request(uri, final_dict)
 
         if created_task:
-            return models.Task.build_task(created_task)
+            return models.Task.build(created_task)
 
     def update_task(
             self,
@@ -783,7 +781,7 @@ class ClickUpClient:
         uri = f"task/{task_id}"
         updated_task = self.__put_request(uri, final_dict)
         if updated_task:
-            return models.Task.build_task(updated_task)
+            return models.Task.build(updated_task)
 
     def delete_task(self, task_id: str) -> bool:
         uri = f"task/{task_id}"

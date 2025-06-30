@@ -1,0 +1,105 @@
+{
+  "id": "000000000",
+  "custom_id": null,
+  "custom_item_id": 0,
+  "name": "TEST",
+  "text_content": "",
+  "description": "",
+  "status": {
+    "id": "sc901506757408_rxP3eUKB",
+    "status": "TODO",
+    "color": "#87909e",
+    "orderindex": 0,
+    "type": "open"
+  },
+  "orderindex": "120318449.00000000000000000000000000000000",
+  "date_created": "1733150298181",
+  "date_updated": "1751093724045",
+  "date_closed": null,
+  "date_done": null,
+  "archived": true,
+  "creator": {
+    "id": 88718467,
+    "username": "Admin",
+    "color": "#3e2724",
+    "email": "admin@example.com",
+    "profilePicture": "https://attachments.clickup.com/profilePictures/0000_hiS.jpg"
+  },
+  "assignees": [],
+  "group_assignees": [],
+  "watchers": [
+    {
+      "id": 88718467,
+      "username": "Admin",
+      "color": "#3e2724",
+      "initials": "AD",
+      "email": "admin@example.com",
+      "profilePicture": "https://attachments.clickup.com/profilePictures/0000_hiS.jpg"
+    },
+    {
+      "id": 2138400312,
+      "username": "Serhiy Gavka",
+      "color": "",
+      "initials": "SG",
+      "email": "sgavka@gmail.com",
+      "profilePicture": null
+    }
+  ],
+  "checklists": [],
+  "tags": [],
+  "parent": null,
+  "top_level_parent": null,
+  "priority": null,
+  "due_date": null,
+  "start_date": null,
+  "points": null,
+  "time_estimate": null,
+  "time_spent": 0,
+  "custom_fields": [],
+  "dependencies": [],
+  "linked_tasks": [],
+  "locations": [],
+  "team_id": "9000000000",
+  "url": "https://app.clickup.com/t/000000000",
+  "sharing": {
+    "public": false,
+    "public_share_expires_on": null,
+    "public_fields": [
+      "assignees",
+      "priority",
+      "due_date",
+      "content",
+      "comments",
+      "attachments",
+      "customFields",
+      "subtasks",
+      "tags",
+      "checklists",
+      "coverimage"
+    ],
+    "token": null,
+    "seo_optimized": false
+  },
+  "permission_level": "create",
+  "list": {
+    "id": "900000000000",
+    "name": "Test List",
+    "access": true
+  },
+  "project": {
+    "id": "900000000000",
+    "name": "Shared with me",
+    "hidden": true,
+    "access": false
+  },
+  "folder": {
+    "id": "900000000000",
+    "name": "Shared with me",
+    "hidden": true,
+    "access": false
+  },
+  "space": {
+    "id": "900000000000"
+  },
+  "attachments": []
+}

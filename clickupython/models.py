@@ -725,9 +725,6 @@ class Task(BaseModel):
     def build_task(self):
         return Task(**self)
 
-    def delete(self):
-        client.ClickUpClient.delete_task(self, self.id)
-
     def upload_attachment(self, client_instance, file_path: str):
         return client_instance.upload_attachment(self.id, file_path)
 
