@@ -178,7 +178,7 @@ class ClickUpClient:
     def __post_request(
             self,
             uri: str,
-            data: Optional[dict],
+            data: Optional[dict] = None,
             upload_files: Optional[Dict[str, Any]] = None,
             file_upload: bool = False
     ) -> Union[Dict[str, Any], None]:
@@ -786,6 +786,14 @@ class ClickUpClient:
     def delete_task(self, task_id: str) -> bool:
         uri = f"task/{task_id}"
         self.__delete_request(uri)
+        return True
+
+    def add_task_link(self, task_id: str, links_to: str) -> bool:
+        uri = f"task/{task_id}/link/{links_to}"
+
+        # it return {"task": { #task object here# }}
+        self.__post_request(uri, None)
+
         return True
 
     # Comments
