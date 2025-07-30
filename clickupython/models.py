@@ -194,6 +194,7 @@ class CommentCommentType(enum.Enum):
     LINK_MENTION = "link_mention"
     BUTTON = "button"
     DOC_MENTION = "doc_mention"
+    TASK_EMBED = "task_embed"
 
 
 class CommentCommentImage(BaseModel):
