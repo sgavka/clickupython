@@ -200,7 +200,7 @@ class CommentCommentType(enum.Enum):
 
 class CommentCommentImage(BaseModel):
     id: str
-    name: str
+    name: Optional[str] = None
     title: str
     type: Optional[str] = None
     extension: str
