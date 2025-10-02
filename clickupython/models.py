@@ -139,9 +139,9 @@ class Attachment(BaseModel):
     title: str
     extension: str
     source: int
-    thumbnail_small: Optional[str]
-    thumbnail_medium: Optional[str]
-    thumbnail_large: Optional[str]
+    thumbnail_small: Optional[str] = None
+    thumbnail_medium: Optional[str] = None
+    thumbnail_large: Optional[str] = None
     url: str
     url_w_query: str
     url_w_host: str
@@ -204,9 +204,9 @@ class CommentCommentImage(BaseModel):
     title: str
     type: Optional[str] = None
     extension: str
-    thumbnail_large: str
-    thumbnail_medium: str
-    thumbnail_small: str
+    thumbnail_large: Optional[str] = None
+    thumbnail_medium: Optional[str] = None
+    thumbnail_small: Optional[str] = None
     url: str
     uploaded: Optional[bool] = None
 
@@ -219,9 +219,9 @@ class CommentCommentAttachment(BaseModel):
     source: int
     version: int
     extension: str
-    thumbnail_small: Optional[str]
-    thumbnail_medium: Optional[str]
-    thumbnail_large: Optional[str]
+    thumbnail_small: Optional[str] = None
+    thumbnail_medium: Optional[str] = None
+    thumbnail_large: Optional[str] = None
     is_folder: Optional[bool]
     mimetype: str
     hidden: bool
