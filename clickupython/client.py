@@ -92,7 +92,7 @@ class ClickUpClient:
 
     def __request(
             self, method: str, uri: str, data: Optional[dict] = None, upload_files: Optional[Dict[str, Any]] = None,
-            file_upload: bool = False, _retry_count: int = 0) -> Union[Dict[str, Any], int, None]:
+            file_upload: bool = False) -> Union[Dict[str, Any], int, None]:
         """Performs an HTTP request to the ClickUp API
 
         Args:
@@ -101,83 +101,86 @@ class ClickUpClient:
             data (str, optional): JSON string for POST/PUT requests
             upload_files (dict, optional): Files to upload for POST requests
             file_upload (bool, optional): Whether this is a file upload request
-            _retry_count (int, optional): Internal retry counter to prevent infinite recursion
 
         Returns:
             Union[Dict[str, Any], int, None]: Response data from the API, status code for DELETE requests, or None if the request fails
         """
         path = formatting.url_join(self.api_url, uri)
-        self.__check_rate_limit()
+        max_json_decode_retries = 3
+        max_rate_limit_retries = 10
 
-        # Prepare request arguments
-        request_kwargs = {
-            "headers": self.__headers(file_upload if upload_files else False)
-        }
-        if method in ["POST", "PUT"] and data:
-            request_kwargs["json"] = data
-        if method == "POST" and upload_files:
-            request_kwargs["files"] = upload_files
+        for attempt in range(max(max_json_decode_retries, max_rate_limit_retries) + 1):
+            self.__check_rate_limit()
 
-        # Make the request
-        response = getattr(requests, method.lower())(path, **request_kwargs)
-        self.request_count += 1
+            # Prepare request arguments
+            request_kwargs = {
+                "headers": self.__headers(file_upload if upload_files else False)
+            }
+            if method in ["POST", "PUT"] and data:
+                request_kwargs["json"] = data
+            if method == "POST" and upload_files:
+                request_kwargs["files"] = upload_files
 
-        # Parse response
-        try:
-            response_json = response.json()
-        except JSONDecodeError as e:
-            if self.request_exception_handler is not None:
-                self.request_exception_handler(e, response, self)
-            if _retry_count >= 3:
-                raise exceptions.ClickupClientError(
-                    "Failed to decode JSON response after 3 retries", response.status_code
-                )
-            return self.__request(method, uri, data, upload_files, file_upload, _retry_count + 1)
+            # Make the request
+            response = getattr(requests, method.lower())(path, **request_kwargs)
+            self.request_count += 1
 
-        self.__parse_response_rate_limit_headers(response)
-
-        # Handle rate limiting
-        if response.status_code == 429:
-            if self.retry_rate_limited_requests:
-                if _retry_count >= 10:
+            # Parse response
+            try:
+                response_json = response.json()
+            except JSONDecodeError as e:
+                if self.request_exception_handler is not None:
+                    self.request_exception_handler(e, response, self)
+                if attempt >= max_json_decode_retries:
                     raise exceptions.ClickupClientError(
-                        "Rate limit retry exceeded after 10 attempts", response.status_code
+                        f"Failed to decode JSON response after {max_json_decode_retries} retries", response.status_code
                     )
-                return self.__request(method, uri, data, upload_files, file_upload, _retry_count + 1)
+                continue  # Retry
 
-            error_data = {
-                'response': response.text,
-                'headers': dict(response.headers),
-                'uri': uri
-            }
-            if data:
-                error_data['data'] = data
+            self.__parse_response_rate_limit_headers(response)
 
-            raise exceptions.ClickupClientError(
-                "Rate limit exceeded", response.status_code, data=error_data
-            )
+            # Handle rate limiting
+            if response.status_code == 429:
+                if self.retry_rate_limited_requests:
+                    if attempt >= max_rate_limit_retries:
+                        raise exceptions.ClickupClientError(
+                            f"Rate limit retry exceeded after {max_rate_limit_retries} attempts", response.status_code
+                        )
+                    continue  # Retry
 
-        # Handle errors
-        if response.status_code >= 400:
-            error_data = {
-                'response': response.text,
-                'headers': dict(response.headers),
-                'uri': uri
-            }
-            if data:
-                error_data['data'] = data
+                error_data = {
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                    'uri': uri
+                }
+                if data:
+                    error_data['data'] = data
 
-            error = response_json.get("err", json.dumps(response_json))
-            raise exceptions.ClickupClientError(
-                error, response.status_code, data=error_data
-            )
+                raise exceptions.ClickupClientError(
+                    "Rate limit exceeded", response.status_code, data=error_data
+                )
 
-        # Return appropriate response
-        if response.ok:
-            # DELETE requests return status code instead of JSON
-            if method == "DELETE":
-                return response.status_code
-            return response_json
+            # Handle errors
+            if response.status_code >= 400:
+                error_data = {
+                    'response': response.text,
+                    'headers': dict(response.headers),
+                    'uri': uri
+                }
+                if data:
+                    error_data['data'] = data
+
+                error = response_json.get("err", json.dumps(response_json))
+                raise exceptions.ClickupClientError(
+                    error, response.status_code, data=error_data
+                )
+
+            # Return appropriate response
+            if response.ok:
+                # DELETE requests return status code instead of JSON
+                if method == "DELETE":
+                    return response.status_code
+                return response_json
 
         return None
 
