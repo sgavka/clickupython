@@ -92,7 +92,7 @@ class ClickUpClient:
 
     def __request(
             self, method: str, uri: str, data: Optional[dict] = None, upload_files: Optional[Dict[str, Any]] = None,
-            file_upload: bool = False) -> Union[Dict[str, Any], int, None]:
+            file_upload: bool = False, _retry_count: int = 0) -> Union[Dict[str, Any], int, None]:
         """Performs an HTTP request to the ClickUp API
 
         Args:
@@ -101,6 +101,7 @@ class ClickUpClient:
             data (str, optional): JSON string for POST/PUT requests
             upload_files (dict, optional): Files to upload for POST requests
             file_upload (bool, optional): Whether this is a file upload request
+            _retry_count (int, optional): Internal retry counter to prevent infinite recursion
 
         Returns:
             Union[Dict[str, Any], int, None]: Response data from the API, status code for DELETE requests, or None if the request fails
@@ -127,14 +128,22 @@ class ClickUpClient:
         except JSONDecodeError as e:
             if self.request_exception_handler is not None:
                 self.request_exception_handler(e, response, self)
-            return self.__request(method, uri, data, upload_files, file_upload)
+            if _retry_count >= 3:
+                raise exceptions.ClickupClientError(
+                    "Failed to decode JSON response after 3 retries", response.status_code
+                )
+            return self.__request(method, uri, data, upload_files, file_upload, _retry_count + 1)
 
         self.__parse_response_rate_limit_headers(response)
 
         # Handle rate limiting
         if response.status_code == 429:
             if self.retry_rate_limited_requests:
-                return self.__request(method, uri, data, upload_files, file_upload)
+                if _retry_count >= 10:
+                    raise exceptions.ClickupClientError(
+                        "Rate limit retry exceeded after 10 attempts", response.status_code
+                    )
+                return self.__request(method, uri, data, upload_files, file_upload, _retry_count + 1)
 
             error_data = {
                 'response': response.text,
@@ -263,9 +272,9 @@ class ClickUpClient:
             unset_status: bool = None,
     ) -> Optional[models.SingleList]:
 
-        if priority and priority not in range(1, 4):
+        if priority and priority not in range(1, 5):
             raise exceptions.ClickupClientError(
-                "Priority must be in range of 0-4.", "Priority out of range"
+                "Priority must be in range of 1-4.", "Priority out of range"
             )
 
         if due_date:
@@ -282,7 +291,6 @@ class ClickUpClient:
         }
 
         final_dict = {k: v for k, v in arguments.items() if v is not None}
-        print(final_dict)
         uri = f"list/{list_id}"
         updated_list = self.__put_request(uri, final_dict)
         if updated_list:
@@ -643,9 +651,9 @@ class ClickUpClient:
         Returns:
             :models.Task: [description]
         """
-        if priority and priority not in range(1, 4):
+        if priority and priority not in range(1, 5):
             raise exceptions.ClickupClientError(
-                "Priority must be in range of 0-4.", "Priority out of range"
+                "Priority must be in range of 1-4.", "Priority out of range"
             )
         if due_date:
             due_date = fuzzy_time_to_unix(due_date)
@@ -711,9 +719,9 @@ class ClickUpClient:
         Returns:
             :models.Task: Returns an object of type Task.
         """
-        if priority and priority not in range(1, 4):
+        if priority and priority not in range(1, 5):
             raise exceptions.ClickupClientError(
-                "Priority must be in range of 0-4.", "Priority out of range"
+                "Priority must be in range of 1-4.", "Priority out of range"
             )
 
         arguments = {
@@ -1132,8 +1140,9 @@ class ClickUpClient:
 
         uri = f"space/{space_id}/tag"
         created_tag = self.__post_request(uri, final_tag)
-        print(created_tag)
-        return True
+        if created_tag:
+            return models.Tag.build_tag(created_tag)
+        return None
 
     def tag_task(self, task_id: str, tag_name: str) -> bool:
         uri = f"task/{task_id}/tag/{tag_name}"
@@ -1157,7 +1166,6 @@ class ClickUpClient:
 
         uri = f"team/{team_id}/space"
         created_space = self.__post_request(uri, final_dict)
-        print(created_space)
         if created_space:
             return models.Space.build_space(created_space)
 
@@ -1183,7 +1191,6 @@ class ClickUpClient:
     def get_shared_hierarchy(self, team_id: str) -> Optional[models.SharedHierarchy]:
         uri = f"team/{team_id}/shared"
         fetched_hierarchy = self.__get_request(uri)
-        print(fetched_hierarchy)
         if fetched_hierarchy:
             return models.SharedHierarchy.build_shared(fetched_hierarchy)
 
@@ -1221,7 +1228,6 @@ class ClickUpClient:
     ) -> Optional[models.TimeTrackingData]:
         uri = f"team/{team_id}/time_entries/{timer_id}"
         fetched_time_data = self.__get_request(uri)
-        print(fetched_time_data)
         if fetched_time_data:
             return models.TimeTrackingDataSingle.build_data(fetched_time_data)
 
