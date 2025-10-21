@@ -1133,7 +1133,7 @@ class CustomFieldFilterOperator(enum.Enum):
 
 class CustomFieldFilter(BaseModel):
     field_id: str
-    operator: Optional[CustomFieldFilterOperator] = None
+    operator: CustomFieldFilterOperator
     value: Union[str, int, list[int]]
 
 
