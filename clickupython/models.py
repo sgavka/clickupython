@@ -1221,6 +1221,11 @@ class CreateWebhook(BaseModel):
     task_id: Optional[str] = None
 
 
+class UpdatedWebhook(BaseModel):
+    id: str
+    webhook: Webhook
+
+
 class CreatedWebhook(BaseModel):
     id: str
     webhook: Webhook

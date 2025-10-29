@@ -1268,3 +1268,14 @@ class ClickUpClient:
         uri = f"webhook/{webhook_id}"
         self.__delete_request(uri)
         return True
+
+    def update_webhook(
+            self,
+            webhook_id: str,
+            endpoint: str,
+            events: str = '*',
+            status: models.WebhookHealthStatus = models.WebhookHealthStatus.active,
+    ) -> models.UpdatedWebhook:
+        uri = f"webhook/{webhook_id}"
+        updated_webhook = self.__put_request(uri, {"endpoint": endpoint, "events": events, "status": status.value})
+        return models.UpdatedWebhook(**updated_webhook)
