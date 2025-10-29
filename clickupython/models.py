@@ -1145,6 +1145,7 @@ class CreateTaskCustomField(BaseModel):
 class WebhookEvent(enum.Enum):
     taskCreated = "taskCreated"
     taskUpdated = "taskUpdated"
+    taskNameUpdated = "taskNameUpdated"
     taskDeleted = "taskDeleted"
     taskPriorityUpdated = "taskPriorityUpdated"
     taskStatusUpdated = "taskStatusUpdated"
