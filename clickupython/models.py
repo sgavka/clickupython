@@ -196,6 +196,7 @@ class CommentCommentType(enum.Enum):
     DOC_MENTION = "doc_mention"
     TASK_EMBED = "task_embed"
     DIVIDER = "divider"
+    LINK_PREVIEW = "link_preview"
 
 
 class CommentCommentImage(BaseModel):
