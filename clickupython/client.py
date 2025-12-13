@@ -1281,22 +1281,3 @@ class ClickUpClient:
         uri = f"webhook/{webhook_id}"
         updated_webhook = self.__put_request(uri, {"endpoint": endpoint, "events": events, "status": status.value})
         return models.UpdatedWebhook(**updated_webhook)
-
-
-if __name__ == '__main__':
-    client = ClickUpClient(os.environ.get('CLICKUP_API_KEY'))
-
-    merch_tasks = client.get_tasks(
-        list_id='901504593576',
-        custom_fields=[
-            CustomFieldFilter(
-                # field_id='e32fe54a-90c2-4677-82cf-70248ae2fbc7',
-                field_id='e32fe54a-90c2-4677-82cf-70248ae2fbc7',
-                operator=CustomFieldFilterOperator.EQUALS,
-                # value='https://invoicegen.info/',
-                value='https://vocalmastery.org',
-            )
-        ],
-    )
-    task = client.get_task('86c6qcmw4')
-    pass

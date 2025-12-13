@@ -266,7 +266,7 @@ class CommentCommentGiphy(BaseModel):
 
 class CommentComment(BaseModel):
     text: str = None
-    type: CommentCommentType = None
+    type: Optional[CommentCommentType] = None
     image: CommentCommentImage = None
     attachment: CommentCommentAttachment = None
     user: User = None
@@ -367,6 +367,7 @@ class CustomFieldValueSecond(BaseModel):
 class CustomField(BaseModel):
     id: str = None
     name: str = None
+    # todo: add enum
     type: str = None
     type_config: TypeConfig = None
     date_created: str = None
