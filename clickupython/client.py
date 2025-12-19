@@ -1281,3 +1281,33 @@ class ClickUpClient:
         uri = f"webhook/{webhook_id}"
         updated_webhook = self.__put_request(uri, {"endpoint": endpoint, "events": events, "status": status.value})
         return models.UpdatedWebhook(**updated_webhook)
+
+    # Custom Fields
+    def set_custom_field_value(
+            self,
+            task_id: str,
+            field_id: str,
+            value: Any,
+    ) -> bool:
+        """Sets the value of a custom field on a task.
+
+        Args:
+            task_id (str): The ID of the task to update.
+            field_id (str): The UUID of the custom field to set.
+            value (Any): The value to set. Type depends on the custom field type:
+                - Text: str
+                - Number: int or float
+                - Dropdown: str (option id) or int (option order index)
+                - Date: int (Unix timestamp in milliseconds)
+                - Checkbox: bool
+                - Labels: list of label UUIDs
+                - Currency: int or float
+                - etc.
+
+        Returns:
+            bool: True if the custom field was successfully set.
+        """
+        data = {"value": value}
+        uri = f"task/{task_id}/field/{field_id}"
+        self.__post_request(uri, data)
+        return True
