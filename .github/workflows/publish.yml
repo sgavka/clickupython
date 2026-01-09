@@ -67,7 +67,7 @@ jobs:
       - name: Test installation from TestPyPI
         run: |
           pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ clickup-api-client
-          python -c "from clickup_sdk.client import ClickUpClient; print('Import successful')"
+          python -c "from clickup_api_client.client import ClickUpClient; print('Import successful')"
 
   pypi:
     needs: test-pypi

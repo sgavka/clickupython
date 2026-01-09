@@ -6,8 +6,8 @@ from time import sleep
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch, call
 
-from clickup_sdk import exceptions
-from clickup_sdk.client import ClickUpClient
+from clickup_api_client import exceptions
+from clickup_api_client.client import ClickUpClient
 
 
 def load_asset(filename):

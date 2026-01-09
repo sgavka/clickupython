@@ -1,7 +1,7 @@
 from word2number import w2n
 from timefhuman import timefhuman
 from datetime import datetime
-from clickup_sdk import exceptions
+from clickup_api_client import exceptions
 import pendulum as time
 
 SCALES = {

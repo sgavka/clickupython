@@ -11,11 +11,11 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Union
 import requests
 from requests import JSONDecodeError
 
-from clickup_sdk import exceptions
-from clickup_sdk import models
-from clickup_sdk.helpers import formatting
-from clickup_sdk.helpers.timefuncs import fuzzy_time_to_unix
-from clickup_sdk.models import CustomFieldFilter, CustomFieldFilterOperator
+from clickup_api_client import exceptions
+from clickup_api_client import models
+from clickup_api_client.helpers import formatting
+from clickup_api_client.helpers.timefuncs import fuzzy_time_to_unix
+from clickup_api_client.models import CustomFieldFilter, CustomFieldFilterOperator
 
 API_URL = "https://api.clickup.com/api/v2/"
 

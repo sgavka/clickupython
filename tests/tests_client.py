@@ -4,7 +4,7 @@ import unittest
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
-from clickup_sdk.client import ClickUpClient
+from clickup_api_client.client import ClickUpClient
 
 
 def load_asset(filename):
