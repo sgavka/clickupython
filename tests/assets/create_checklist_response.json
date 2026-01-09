@@ -1,0 +1,32 @@
+{
+  "checklist": {
+    "id": "checklist123",
+    "task_id": "000000000",
+    "name": "Test Checklist",
+    "orderindex": 1,
+    "creator": 88718467,
+    "resolved": 0,
+    "unresolved": 2,
+    "date_created": "1650000000000",
+    "items": [
+      {
+        "id": "item1",
+        "name": "Checklist item 1",
+        "orderindex": 1,
+        "assignee": null,
+        "resolved": false,
+        "parent": null,
+        "date_created": "1650000000000"
+      },
+      {
+        "id": "item2",
+        "name": "Checklist item 2",
+        "orderindex": 2,
+        "assignee": null,
+        "resolved": false,
+        "parent": null,
+        "date_created": "1650000000000"
+      }
+    ]
+  }
+}

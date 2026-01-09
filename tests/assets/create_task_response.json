@@ -1,0 +1,56 @@
+{
+  "id": "999888777",
+  "custom_id": null,
+  "name": "New Task",
+  "text_content": "Task description",
+  "description": "Task description",
+  "status": {
+    "status": "TODO",
+    "color": "#d3d3d3",
+    "orderindex": 0,
+    "type": "open"
+  },
+  "orderindex": "1.00000000000000000000000000000000",
+  "date_created": "1650000000000",
+  "date_updated": "1650000000000",
+  "date_closed": null,
+  "archived": false,
+  "creator": {
+    "id": 88718467,
+    "username": "Admin",
+    "color": "#3e2724",
+    "email": "admin@example.com",
+    "profilePicture": "https://attachments.clickup.com/profilePictures/0000_hiS.jpg"
+  },
+  "assignees": [],
+  "watchers": [],
+  "checklists": [],
+  "tags": [],
+  "parent": null,
+  "priority": {
+    "id": "1",
+    "priority": "urgent",
+    "color": "#f50000",
+    "orderindex": "1"
+  },
+  "due_date": "1651000000000",
+  "start_date": null,
+  "time_estimate": null,
+  "time_spent": 0,
+  "custom_fields": [],
+  "list": {
+    "id": "123456789",
+    "name": "Test List",
+    "access": true
+  },
+  "folder": {
+    "id": "456789123",
+    "name": "Test Folder",
+    "hidden": false,
+    "access": true
+  },
+  "space": {
+    "id": "789123456"
+  },
+  "url": "https://app.clickup.com/t/999888777"
+}

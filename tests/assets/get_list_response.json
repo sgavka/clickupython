@@ -1,0 +1,58 @@
+{
+  "id": "123456789",
+  "name": "Test List",
+  "orderindex": 0,
+  "content": "Test list description",
+  "status": {
+    "status": "red",
+    "color": "#e50000",
+    "hide_label": false
+  },
+  "priority": {
+    "priority": "high",
+    "color": "#ffcc00"
+  },
+  "assignee": null,
+  "task_count": 5,
+  "due_date": "1640000000000",
+  "due_date_time": false,
+  "start_date": null,
+  "start_date_time": null,
+  "folder": {
+    "id": "456789123",
+    "name": "Test Folder",
+    "hidden": false,
+    "access": true
+  },
+  "space": {
+    "id": "789123456",
+    "name": "Test Space",
+    "access": true
+  },
+  "archived": false,
+  "override_statuses": false,
+  "statuses": [
+    {
+      "id": "p123_abc",
+      "status": "TODO",
+      "orderindex": 0,
+      "color": "#d3d3d3",
+      "type": "open"
+    },
+    {
+      "id": "p123_def",
+      "status": "IN PROGRESS",
+      "orderindex": 1,
+      "color": "#4194f6",
+      "type": "custom"
+    },
+    {
+      "id": "p123_ghi",
+      "status": "DONE",
+      "orderindex": 2,
+      "color": "#6bc950",
+      "type": "closed"
+    }
+  ],
+  "permission_level": "create"
+}

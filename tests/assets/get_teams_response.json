@@ -1,0 +1,27 @@
+{
+  "teams": [
+    {
+      "id": "9000000001",
+      "name": "Test Team",
+      "color": "#536EA2",
+      "avatar": null,
+      "members": [
+        {
+          "user": {
+            "id": 88718467,
+            "username": "Admin",
+            "email": "admin@example.com",
+            "color": "#3e2724",
+            "profilePicture": "https://attachments.clickup.com/profilePictures/0000_hiS.jpg",
+            "initials": "AD",
+            "role": 3,
+            "custom_role": null,
+            "last_active": "1733150298000",
+            "date_joined": "1609459200000",
+            "date_invited": "1609459200000"
+          }
+        }
+      ]
+    }
+  ]
+}

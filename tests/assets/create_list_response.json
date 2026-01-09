@@ -1,0 +1,40 @@
+{
+  "id": "111222333",
+  "name": "New Test List",
+  "orderindex": 0,
+  "content": "Newly created list",
+  "status": null,
+  "priority": {
+    "priority": "normal",
+    "color": "#ffcc00"
+  },
+  "assignee": null,
+  "task_count": 0,
+  "due_date": "1650000000000",
+  "due_date_time": false,
+  "start_date": null,
+  "start_date_time": null,
+  "folder": {
+    "id": "456789123",
+    "name": "Test Folder",
+    "hidden": false,
+    "access": true
+  },
+  "space": {
+    "id": "789123456",
+    "name": "Test Space",
+    "access": true
+  },
+  "archived": false,
+  "override_statuses": false,
+  "statuses": [
+    {
+      "id": "p123_new",
+      "status": "TODO",
+      "orderindex": 0,
+      "color": "#d3d3d3",
+      "type": "open"
+    }
+  ],
+  "permission_level": "create"
+}

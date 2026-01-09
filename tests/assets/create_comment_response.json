@@ -1,0 +1,22 @@
+{
+  "id": "33333333",
+  "hist_id": "abc123def456",
+  "comment": [
+    {
+      "text": "New comment created"
+    }
+  ],
+  "comment_text": "New comment created",
+  "user": {
+    "id": 88718467,
+    "username": "Admin",
+    "email": "admin@example.com",
+    "color": "#3e2724",
+    "profilePicture": "https://attachments.clickup.com/profilePictures/0000_hiS.jpg"
+  },
+  "resolved": false,
+  "assignee": null,
+  "assigned_by": null,
+  "reactions": [],
+  "date": "1650000000000"
+}

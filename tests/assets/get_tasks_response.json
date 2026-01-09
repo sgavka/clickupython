@@ -1,0 +1,94 @@
+{
+  "tasks": [
+    {
+      "id": "111111111",
+      "custom_id": null,
+      "name": "Task 1",
+      "text_content": "",
+      "description": "",
+      "status": {
+        "status": "TODO",
+        "color": "#d3d3d3",
+        "orderindex": 0,
+        "type": "open"
+      },
+      "orderindex": "1.00000000000000000000000000000000",
+      "date_created": "1640000000000",
+      "date_updated": "1640000000000",
+      "date_closed": null,
+      "archived": false,
+      "creator": {
+        "id": 88718467,
+        "username": "Admin",
+        "color": "#3e2724",
+        "email": "admin@example.com"
+      },
+      "assignees": [],
+      "checklists": [],
+      "tags": [],
+      "parent": null,
+      "priority": null,
+      "due_date": null,
+      "start_date": null,
+      "time_estimate": null,
+      "time_spent": 0,
+      "list": {
+        "id": "123456789",
+        "name": "Test List"
+      },
+      "folder": {
+        "id": "456789123",
+        "name": "Test Folder"
+      },
+      "space": {
+        "id": "789123456"
+      },
+      "url": "https://app.clickup.com/t/111111111"
+    },
+    {
+      "id": "222222222",
+      "custom_id": null,
+      "name": "Task 2",
+      "text_content": "",
+      "description": "",
+      "status": {
+        "status": "IN PROGRESS",
+        "color": "#4194f6",
+        "orderindex": 1,
+        "type": "custom"
+      },
+      "orderindex": "2.00000000000000000000000000000000",
+      "date_created": "1640100000000",
+      "date_updated": "1640100000000",
+      "date_closed": null,
+      "archived": false,
+      "creator": {
+        "id": 88718467,
+        "username": "Admin",
+        "color": "#3e2724",
+        "email": "admin@example.com"
+      },
+      "assignees": [],
+      "checklists": [],
+      "tags": [],
+      "parent": null,
+      "priority": null,
+      "due_date": null,
+      "start_date": null,
+      "time_estimate": null,
+      "time_spent": 0,
+      "list": {
+        "id": "123456789",
+        "name": "Test List"
+      },
+      "folder": {
+        "id": "456789123",
+        "name": "Test Folder"
+      },
+      "space": {
+        "id": "789123456"
+      },
+      "url": "https://app.clickup.com/t/222222222"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-from clickupython import client
+from clickup_sdk import client
 
 """
 	Here's how to validate a personal API key and create a new task with a 

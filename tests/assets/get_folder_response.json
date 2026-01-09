@@ -1,0 +1,44 @@
+{
+  "id": "456789123",
+  "name": "Test Folder",
+  "orderindex": 0,
+  "override_statuses": false,
+  "hidden": false,
+  "space": {
+    "id": "789123456",
+    "name": "Test Space",
+    "access": true
+  },
+  "task_count": 15,
+  "archived": false,
+  "statuses": [],
+  "lists": [
+    {
+      "id": "123456789",
+      "name": "List in Folder",
+      "orderindex": 0,
+      "content": "",
+      "status": null,
+      "priority": null,
+      "assignee": null,
+      "task_count": 8,
+      "due_date": null,
+      "start_date": null,
+      "folder": {
+        "id": "456789123",
+        "name": "Test Folder",
+        "hidden": false,
+        "access": true
+      },
+      "space": {
+        "id": "789123456",
+        "name": "Test Space",
+        "access": true
+      },
+      "archived": false,
+      "override_statuses": false,
+      "permission_level": "create"
+    }
+  ],
+  "permission_level": "create"
+}

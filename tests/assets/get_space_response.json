@@ -1,0 +1,62 @@
+{
+  "id": "789123456",
+  "name": "Test Space",
+  "private": false,
+  "statuses": [
+    {
+      "id": "p123_abc",
+      "status": "TODO",
+      "type": "open",
+      "orderindex": 0,
+      "color": "#d3d3d3"
+    },
+    {
+      "id": "p123_def",
+      "status": "IN PROGRESS",
+      "type": "custom",
+      "orderindex": 1,
+      "color": "#4194f6"
+    },
+    {
+      "id": "p123_ghi",
+      "status": "DONE",
+      "type": "closed",
+      "orderindex": 2,
+      "color": "#6bc950"
+    }
+  ],
+  "multiple_assignees": true,
+  "features": {
+    "due_dates": {
+      "enabled": true,
+      "start_date": false,
+      "remap_due_dates": false,
+      "remap_closed_due_date": false
+    },
+    "time_tracking": {
+      "enabled": true
+    },
+    "tags": {
+      "enabled": true
+    },
+    "time_estimates": {
+      "enabled": true
+    },
+    "checklists": {
+      "enabled": true
+    },
+    "custom_fields": {
+      "enabled": true
+    },
+    "remap_dependencies": {
+      "enabled": false
+    },
+    "dependency_warning": {
+      "enabled": false
+    },
+    "portfolios": {
+      "enabled": false
+    }
+  },
+  "archived": false
+}

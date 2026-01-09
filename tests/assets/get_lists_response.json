@@ -1,0 +1,60 @@
+{
+  "lists": [
+    {
+      "id": "123456789",
+      "name": "Test List 1",
+      "orderindex": 0,
+      "content": "First test list",
+      "status": {
+        "status": "red",
+        "color": "#e50000",
+        "hide_label": false
+      },
+      "priority": null,
+      "assignee": null,
+      "task_count": 3,
+      "due_date": null,
+      "start_date": null,
+      "folder": {
+        "id": "456789123",
+        "name": "Test Folder",
+        "hidden": false,
+        "access": true
+      },
+      "space": {
+        "id": "789123456",
+        "name": "Test Space",
+        "access": true
+      },
+      "archived": false,
+      "override_statuses": false,
+      "permission_level": "create"
+    },
+    {
+      "id": "987654321",
+      "name": "Test List 2",
+      "orderindex": 1,
+      "content": "Second test list",
+      "status": null,
+      "priority": null,
+      "assignee": null,
+      "task_count": 7,
+      "due_date": null,
+      "start_date": null,
+      "folder": {
+        "id": "456789123",
+        "name": "Test Folder",
+        "hidden": false,
+        "access": true
+      },
+      "space": {
+        "id": "789123456",
+        "name": "Test Space",
+        "access": true
+      },
+      "archived": false,
+      "override_statuses": false,
+      "permission_level": "create"
+    }
+  ]
+}

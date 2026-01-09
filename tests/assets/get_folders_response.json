@@ -1,0 +1,34 @@
+{
+  "folders": [
+    {
+      "id": "456789123",
+      "name": "Test Folder 1",
+      "orderindex": 0,
+      "override_statuses": false,
+      "hidden": false,
+      "space": {
+        "id": "789123456",
+        "name": "Test Space",
+        "access": true
+      },
+      "task_count": 10,
+      "archived": false,
+      "lists": []
+    },
+    {
+      "id": "654321987",
+      "name": "Test Folder 2",
+      "orderindex": 1,
+      "override_statuses": false,
+      "hidden": false,
+      "space": {
+        "id": "789123456",
+        "name": "Test Space",
+        "access": true
+      },
+      "task_count": 5,
+      "archived": false,
+      "lists": []
+    }
+  ]
+}
