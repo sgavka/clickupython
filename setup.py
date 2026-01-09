@@ -17,11 +17,11 @@ def _parse_requirements(filename: str) -> List[str]:
 
 
 setuptools.setup(
-    name="clickup-sdk",
+    name="clickup-api-client",
     author="Gavka Serhiy",
     author_email="sgavka@gmail.com",
-    description="clickup-sdk: A Python client for the ClickUp API",
-    keywords="clickup, clickup api, python, clickup-sdk, sdk",
+    description="clickup-api-client: A Python client for the ClickUp API",
+    keywords="clickup, clickup api, python, clickup-api-client, sdk",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sgavka/clickup-sdk",
