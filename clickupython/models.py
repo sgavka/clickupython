@@ -1176,6 +1176,7 @@ class WebhookEvent(enum.Enum):
     keyResultUpdated = "keyResultUpdated"
     keyResultDeleted = "keyResultDeleted"
     taskUserMentioned = "taskUserMentioned"
+    taskStartDateUpdated = "taskStartDateUpdated"
     all = "*"
 
 
