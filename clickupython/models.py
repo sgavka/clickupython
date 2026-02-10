@@ -713,7 +713,7 @@ class Task(BaseModel):
     priority: Optional[Any] = None
     due_date: Optional[str] = None
     start_date: Optional[str] = None
-    time_estimate: Optional[str] = None
+    time_estimate: Optional[Union[str, int]] = None
 
     time_spent: Optional[int] = None
 
