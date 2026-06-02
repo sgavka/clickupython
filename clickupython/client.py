@@ -1262,7 +1262,7 @@ class ClickUpClient:
 
     def create_webhook(self, team_id: int, create_webhook: models.CreateWebhook) -> Optional[models.Webhook]:
         uri = f"team/{str(team_id)}/webhook"
-        created_webhook = self.__post_request(uri, create_webhook.model_dump_json())
+        created_webhook = self.__post_request(uri, create_webhook.model_dump(mode='json'))
         if created_webhook:
             return models.CreatedWebhook.build_webhook(created_webhook).webhook
 
