@@ -29,8 +29,10 @@ class ClickUpClient:
             rate_limit_buffer_wait_time: int = 5,
             start_rate_limit_remaining: int = 100,
             start_rate_limit_reset: float = datetime.now().timestamp(),
-            request_exception_handler: Optional[Callable[[Exception, requests.Response, Any], None]] = None,
+            request_exception_handler: Optional[Callable[[Exception, Optional[requests.Response], Any], None]] = None,
             sleep_on_rate_limit_handler: Optional[Callable[[float, Any], None]] = None,
+            retry_server_errors: bool = False,
+            max_server_error_retries: int = 3,
     ) -> None:
         self.api_url = api_url
         self.token = token
@@ -41,6 +43,8 @@ class ClickUpClient:
         self.retry_rate_limited_requests = retry_rate_limited_requests
         self.request_exception_handler = request_exception_handler
         self.sleep_on_rate_limit_handler = sleep_on_rate_limit_handler
+        self.retry_server_errors = retry_server_errors
+        self.max_server_error_retries = max_server_error_retries
 
     def __parse_response_rate_limit_headers(self, response: requests.Response) -> None:
         """Parses rate limit headers from the response and updates instance variables.
@@ -110,8 +114,9 @@ class ClickUpClient:
         path = formatting.url_join(self.api_url, uri)
         max_json_decode_retries = 3
         max_rate_limit_retries = 10
+        max_server_error_retries = self.max_server_error_retries if self.retry_server_errors else 0
 
-        for attempt in range(max(max_json_decode_retries, max_rate_limit_retries) + 1):
+        for attempt in range(max(max_json_decode_retries, max_rate_limit_retries, max_server_error_retries) + 1):
             self.__check_rate_limit()
 
             # Prepare request arguments
@@ -124,7 +129,16 @@ class ClickUpClient:
                 request_kwargs["files"] = upload_files
 
             # Make the request
-            response = getattr(requests, method.lower())(path, **request_kwargs)
+            try:
+                response = getattr(requests, method.lower())(path, **request_kwargs)
+            except requests.exceptions.RequestException as e:
+                if self.request_exception_handler is not None:
+                    self.request_exception_handler(e, None, self)
+                if attempt >= max_json_decode_retries:
+                    raise exceptions.ClickupClientError(
+                        f"Request failed after {max_json_decode_retries} retries: {e}", 0
+                    )
+                continue
             self.request_count += 1
 
             # Parse response
@@ -161,6 +175,15 @@ class ClickUpClient:
                 raise exceptions.ClickupClientError(
                     "Rate limit exceeded", response.status_code, data=error_data
                 )
+
+            # Handle server errors with optional retry
+            if response.status_code >= 500 and self.retry_server_errors and attempt < max_server_error_retries:
+                if self.request_exception_handler is not None:
+                    err = exceptions.ClickupClientError(
+                        response_json.get("err", response.text), response.status_code
+                    )
+                    self.request_exception_handler(err, response, self)
+                continue
 
             # Handle errors
             if response.status_code >= 400:
