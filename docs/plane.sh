@@ -17,6 +17,9 @@
 #   docs/plane.sh task-in-progress                      — in-progress task (filtered by PLANE_LABEL); {"done":true} if none
 #   docs/plane.sh create-task <name> [desc] [priority] [backlog|todo]  — create new issue
 #   docs/plane.sh create-page <name> [desc_html]         — create new project page
+#   docs/plane.sh main-page                              — get the project's main doc page (needs PLANE_MAIN_DOC_PAGE_ID; see how-to-add-plane-pages.md)
+#   docs/plane.sh page-url <id>                          — print the page's web-app URL (for linking it from another page)
+#   docs/plane.sh append-to-page <id>                    — append HTML to the end of a page's description_html (reads from stdin)
 #   docs/plane.sh get-page <id>                          — print full page JSON (includes description_html)
 #   docs/plane.sh edit-page <id> [name] [desc_html]      — patch a page's name and/or description (pass "" to skip one)
 #   docs/plane.sh remove-page <id>                       — delete a page (must be archived first — see archive-page)
@@ -31,11 +34,24 @@
 #   docs/plane.sh get-issue <id>                         — print full issue JSON
 #   docs/plane.sh list-states                            — print all project states
 #   docs/plane.sh list-projects                          — print all workspace projects
+#   docs/plane.sh upload-asset <file> [project_id]       — upload an image/file, print {asset_id, embed_html}
+#   docs/plane.sh download-asset <asset_id> <out_path>   — download an asset (e.g. an image embedded in a comment/description)
+#   docs/plane.sh list-images <issue_id>                 — JSON array of asset ids embedded in the issue's description + comments
 #
 # All comment/description bodies sent to Plane must be HTML, not Markdown.
 #
+# Images in comments/descriptions: Plane's editor embeds uploaded images as
+# <image-component src="<asset_id>" width="35%" height="auto" alignment="left"></image-component>
+# — the src attribute is an asset UUID, not a literal URL. To embed a new
+# image, run `upload-asset <file>` and splice its `embed_html` into the HTML
+# you send via add-comment/update-description/append-description. To view an
+# image someone else attached, run `list-images <issue_id>` to find asset
+# ids, then `download-asset <asset_id> <out_path>` and read the file locally.
+#
 # Required in .env: PLANE_HOST, PLANE_TOKEN, PLANE_USERNAME
 # Optional in .env: PLANE_PROJECT_ID       (auto-detected from first project if absent)
+#                   PLANE_MAIN_DOC_PAGE_ID  (id of the project's main Plane doc page, used by main-page;
+#                                            empty until the page has been created once — see how-to-add-plane-pages.md)
 #                   PLANE_STATE_IN_PROGRESS (default: searches by name "In Progress" in started group)
 #                   PLANE_STATE_REVIEW      (default: searches by name containing "review")
 #                   PLANE_STATE_DONE        (default: searches completed group for name "done")
@@ -269,6 +285,7 @@ cmd_next_task() {
         | jq '[.results[] | {
             id,
             body: (.comment_html // "" | gsub("<[^>]*>"; "") | gsub("^\\s+|\\s+$"; "")),
+            images: [(.comment_html // "") | scan("<(?:image-component|img)[^>]*\\bsrc=\"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\"") | .[0]],
             created_at
         }] | sort_by(.created_at)')
 
@@ -432,6 +449,7 @@ cmd_get_comments() {
         | jq '[.results[] | {
             id,
             body: (.comment_html // "" | gsub("<[^>]*>"; "") | gsub("^\\s+|\\s+$"; "")),
+            images: [(.comment_html // "") | scan("<(?:image-component|img)[^>]*\\bsrc=\"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\"") | .[0]],
             created_at
         }] | sort_by(.created_at)'
 }
@@ -578,6 +596,7 @@ cmd_task_in_progress() {
         | jq '[.results[] | {
             id,
             body: (.comment_html // "" | gsub("<[^>]*>"; "") | gsub("^\\s+|\\s+$"; "")),
+            images: [(.comment_html // "") | scan("<(?:image-component|img)[^>]*\\bsrc=\"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\"") | .[0]],
             created_at
         }] | sort_by(.created_at)')
 
@@ -844,6 +863,47 @@ cmd_get_page() {
     _curl "$BASE/projects/$pid/pages/$page_id/" | jq '.'
 }
 
+# Direct lookup of the project's main doc page via its known id, so the agent
+# does not have to re-run search-pages (a fuzzy substring search, not an exact
+# match) every iteration. Requires PLANE_MAIN_DOC_PAGE_ID in .env — see
+# how-to-add-plane-pages.md for how that gets set the first time the main page
+# is created.
+cmd_main_page() {
+    if [ -z "${PLANE_MAIN_DOC_PAGE_ID:-}" ]; then
+        echo "ERROR: PLANE_MAIN_DOC_PAGE_ID not set in .env — run 'search-pages <project-name>' to find the main page (or create-page to make it), then add PLANE_MAIN_DOC_PAGE_ID=<id> to .env." >&2
+        exit 1
+    fi
+    cmd_get_page "$PLANE_MAIN_DOC_PAGE_ID"
+}
+
+# Plane/PageDetail has no url/web_url field, so the web-app link has to be
+# built by hand — used to link a newly created page from the main page (see
+# how-to-add-plane-pages.md: every page must be linked from the main page).
+cmd_page_url() {
+    local page_id="${1:?page_id required}"
+    local pid
+    pid=$(_project_id)
+    echo "https://$PLANE_HOST/$PLANE_USERNAME/projects/$pid/pages/$page_id/"
+}
+
+# Append HTML (read from stdin) to the END of a page's existing
+# description_html — mirrors append-description for issues. Used to add a
+# link to a newly created page onto the main page without having to fetch
+# and resend its whole existing content by hand.
+cmd_append_to_page() {
+    local page_id="${1:?page_id required}"
+    local pid
+    pid=$(_project_id)
+    local frag
+    frag=$(cat)
+    local current_desc
+    current_desc=$(_curl "$BASE/projects/$pid/pages/$page_id/" | jq -r '.description_html // ""')
+    local payload
+    payload=$(jq -n --arg d "${current_desc}${frag}" '{description_html: $d}')
+    _curl -X PATCH -d "$payload" "$BASE/projects/$pid/pages/$page_id/" \
+        | jq '{id, name, description_html}'
+}
+
 # Patch a page's name and/or description_html. Either arg may be "" to leave
 # that field untouched. A plain-text description is wrapped in <p>; a string
 # already containing tags is sent through as-is (HTML).
@@ -950,6 +1010,104 @@ cmd_replace_in_page() {
         | jq --argjson count "$count" '{id, name, replacements: $count}'
 }
 
+# Upload a file as a generic workspace asset and mark it uploaded, in one
+# shot: create the asset (presigned S3 POST), stream the file straight to
+# that presigned URL, then PATCH is_uploaded=true. Prints {asset_id,
+# embed_html} — splice embed_html into any HTML sent via add-comment /
+# update-description / append-description / prepend-description to show the
+# image inline. The src attribute of <image-component> is the asset UUID,
+# not a literal URL (Plane's editor resolves it client-side).
+cmd_upload_asset() {
+    local file_path="${1:?file path required}"
+    local project_id="${2:-}"
+
+    if [ ! -f "$file_path" ]; then
+        echo "ERROR: file not found: $file_path" >&2
+        exit 1
+    fi
+    if [ -z "$project_id" ]; then
+        project_id=$(_project_id)
+    fi
+
+    local name size mime
+    name=$(basename "$file_path")
+    size=$(stat -c%s "$file_path" 2>/dev/null || stat -f%z "$file_path")
+    mime=$(file -b --mime-type "$file_path")
+
+    local payload
+    payload=$(jq -n --arg name "$name" --arg type "$mime" --argjson size "$size" --arg pid "$project_id" \
+        '{name: $name, type: $type, size: $size, project_id: $pid}')
+
+    local resp
+    resp=$(_curl -X POST -d "$payload" "$BASE/assets/")
+
+    local asset_id upload_url
+    asset_id=$(echo "$resp" | jq -r '.asset_id // empty')
+    upload_url=$(echo "$resp" | jq -r '.upload_data.url // empty')
+
+    if [ -z "$asset_id" ] || [ -z "$upload_url" ]; then
+        echo "ERROR: failed to create asset: $resp" >&2
+        exit 1
+    fi
+
+    # S3 presigned POST: every policy field must be sent as its own form
+    # field, in order, with the file itself last.
+    local -a form_args=()
+    while IFS=$'\t' read -r key value; do
+        form_args+=(-F "${key}=${value}")
+    done < <(echo "$resp" | jq -r '.upload_data.fields | to_entries[] | "\(.key)\t\(.value)"')
+
+    curl -sf "${form_args[@]}" -F "file=@${file_path};type=${mime}" "$upload_url" -o /dev/null
+
+    _curl -X PATCH -d '{"is_uploaded": true}' "$BASE/assets/${asset_id}/" >/dev/null
+
+    local embed="<image-component src=\"${asset_id}\" width=\"35%\" height=\"auto\" alignment=\"left\"></image-component>"
+    jq -n --arg id "$asset_id" --arg embed "$embed" '{asset_id: $id, embed_html: $embed}'
+}
+
+# Download an asset (e.g. an image embedded in a comment/description) to a
+# local path so it can be viewed. Resolves the presigned download URL first.
+cmd_download_asset() {
+    local asset_id="${1:?asset_id required}"
+    local output_path="${2:?output_path required}"
+
+    local resp
+    resp=$(_curl "$BASE/assets/${asset_id}/")
+
+    local url name mime
+    url=$(echo "$resp" | jq -r '.asset_url // empty')
+    name=$(echo "$resp" | jq -r '.asset_name // empty')
+    mime=$(echo "$resp" | jq -r '.asset_type // empty')
+
+    if [ -z "$url" ]; then
+        echo "ERROR: could not resolve download URL for asset $asset_id: $resp" >&2
+        exit 1
+    fi
+
+    curl -sfL "$url" -o "$output_path"
+    jq -n --arg path "$output_path" --arg name "$name" --arg type "$mime" '{path: $path, name: $name, type: $type}'
+}
+
+# Scan an issue's description_html and all its comments' comment_html for
+# embedded <image-component>/<img> asset ids (src holding a UUID), so the
+# agent has one place to look before manually grepping HTML. Returns a JSON
+# array of unique asset ids — pass each to download-asset to view it.
+cmd_list_images() {
+    local issue_id="${1:?issue_id required}"
+    local pid
+    pid=$(_project_id)
+
+    local desc
+    desc=$(_curl "$BASE/projects/$pid/issues/$issue_id/" | jq -r '.description_html // ""')
+    local comments_html
+    comments_html=$(_curl "$BASE/projects/$pid/issues/$issue_id/comments/" | jq -r '[.results[].comment_html // ""] | join(" ")')
+
+    jq -n --arg d "$desc" --arg c "$comments_html" '
+        ($d + " " + $c) as $html |
+        [$html | scan("<(?:image-component|img)[^>]*\\bsrc=\"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\"") | .[0]] | unique
+    '
+}
+
 # ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
@@ -975,6 +1133,9 @@ case "$CMD" in
     prepend-description) cmd_prepend_description "${1:?issue_id required}" ;;
     create-task)         cmd_create_task "${1:?task name required}" "${2:-}" "${3:-none}" "${4:-backlog}" ;;
     create-page)         cmd_create_page "${1:?page name required}" "${2:-}" ;;
+    main-page)            cmd_main_page ;;
+    page-url)             cmd_page_url "${1:?page_id required}" ;;
+    append-to-page)       cmd_append_to_page "${1:?page_id required}" ;;
     get-page)             cmd_get_page "${1:?page_id required}" ;;
     edit-page)            cmd_edit_page "${1:?page_id required}" "${2:-}" "${3:-}" ;;
     remove-page)          cmd_remove_page "${1:?page_id required}" ;;
@@ -987,9 +1148,12 @@ case "$CMD" in
     get-issue)        cmd_get_issue "${1:?issue_id required}" ;;
     list-states)      cmd_list_states ;;
     list-projects)    cmd_list_projects ;;
+    upload-asset)     cmd_upload_asset "${1:?file path required}" "${2:-}" ;;
+    download-asset)   cmd_download_asset "${1:?asset_id required}" "${2:?output_path required}" ;;
+    list-images)      cmd_list_images "${1:?issue_id required}" ;;
     *)
         echo "Usage: $0 <command> [args]"
-        echo "Commands: next-task | task-in-progress | set-in-progress <id> | set-review <id> | set-todo <id> | list-review | set-done <id> | set-cancelled <id> | set-branch <id> <branch> | set-pr <id> <pr_url> | add-comment <id> <html> | get-comments <id> | update-description <id> | append-description <id> | prepend-description <id> | create-task <name> [desc] [priority] [backlog|todo] | create-page <name> [desc_html] | get-page <id> | edit-page <id> [name] [desc_html] | remove-page <id> | archive-page <id> | unarchive-page <id> | search-pages <query> | replace-in-page <id> <search> <replace> | done-in-period <from> [<to>] | review-done-in-period <from> [<to>] | get-issue <id> | list-states | list-projects"
+        echo "Commands: next-task | task-in-progress | set-in-progress <id> | set-review <id> | set-todo <id> | list-review | set-done <id> | set-cancelled <id> | set-branch <id> <branch> | set-pr <id> <pr_url> | add-comment <id> <html> | get-comments <id> | update-description <id> | append-description <id> | prepend-description <id> | create-task <name> [desc] [priority] [backlog|todo] | create-page <name> [desc_html] | main-page | page-url <id> | append-to-page <id> | get-page <id> | edit-page <id> [name] [desc_html] | remove-page <id> | archive-page <id> | unarchive-page <id> | search-pages <query> | replace-in-page <id> <search> <replace> | done-in-period <from> [<to>] | review-done-in-period <from> [<to>] | get-issue <id> | list-states | list-projects | upload-asset <file> [project_id] | download-asset <asset_id> <out_path> | list-images <issue_id>"
         exit 1
         ;;
 esac

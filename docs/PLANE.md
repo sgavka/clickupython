@@ -11,12 +11,13 @@ Development loop using Plane.so as the task board. **The task you must work on i
   - Before every `add-comment`, re-read the body: if it contains `[`…`](`, `**`, `` ` ``, or a leading `- `, rewrite it as HTML first.
 - **If a comment or the description asks a question, answer it in a comment** (`add-comment`). Do not answer only in your response.
 - **If you hit an infrastructure problem** — cannot run code, tests fail to start, Docker build fails, missing test fixtures/assets, ClickUp API client errors — **post a comment describing the problem** (what you ran, the error) so the operator sees it, then signal completion.
+- **When mentioning code in comments/descriptions, link to it on GitHub** using HTML anchors and full permalinks: `<a href="https://github.com/sgavka/clickupython/blob/<branch>/<path>#L<line>">UserService.handle()</a>`
 
 ## Task states (managed by the loop)
 
 You never change task state — the loop owns every transition. Your task is **already In Progress**; the loop moves it to **Review** when the iteration ends. Do **not** call `set-in-progress`, `set-review`, `set-done`, or `set-cancelled`.
 
-- **Re-queue on test failure:** before each iteration the loop moves any **Review** task whose PR's `Run tests in container` check **failed** back to **Todo** (build / code-quality / deploy failures do not count). A re-picked task continues on its existing branch/PR — see _Iteration detection_. This repo has no PR-time CI (the only workflow, python-publish.yml, runs on a GitHub release being published, not on push/PR), so this never fires here — treat step 4 (Run tests and quality gates) as authoritative.
+- **Re-queue on test failure:** before each iteration the loop moves any **Review** task whose PR's `Run tests in container` check(s) **failed** back to **Todo** (only checks configured via `PR_CI_CHECK_PATTERNS` count — other checks are ignored). A re-picked task continues on its existing branch/PR — see _Iteration detection_. This repo has no PR-time CI (the only workflow, python-publish.yml, runs on a GitHub release being published, not on push/PR), so this never fires here — treat step 4 (Run tests and quality gates) as authoritative.
 - **New sub-tasks** you create default to **Backlog** (staging); they are promoted to **Todo** manually when ready.
 
 ## Plane API Helper
@@ -33,7 +34,14 @@ docs/plane.sh prepend-description <id>            # Prepend HTML to START of des
 docs/plane.sh set-branch <id> <branch>            # Append branch tag to description AND post a comment
 docs/plane.sh set-pr <id> <pr_url>                # Append PR link to description AND post a comment
 docs/plane.sh create-task <name> [desc] [priority] [backlog|todo]   # Create new task (default: backlog)
+docs/plane.sh upload-asset <file> [project_id]    # Upload an image/file; prints {asset_id, embed_html}
+docs/plane.sh download-asset <asset_id> <out_path> # Download an asset (e.g. an image attached to the task) to view it
+docs/plane.sh list-images <id>                    # JSON array of asset ids embedded in the task's description + comments
 ```
+
+**Images in comments/descriptions.** Plane embeds uploaded images as `<image-component src="<asset_id>" width="35%" height="auto" alignment="left"></image-component>` — `src` is an asset UUID, not a literal URL.
+- **To view an image already on the task** (e.g. a screenshot in the description or in a comment): each entry in the injected `comments` array carries an `images` field listing any embedded asset ids (comments-only; the description itself is left as raw `description_html`, so scan it directly for `<image-component src="...">` if you need images from there too — or just run `list-images <id>` to get every image id from both in one call). Then `download-asset <asset_id> <local_path>` and read the local file to view it.
+- **To embed a new image** (e.g. a screenshot you captured to illustrate a bug or a UI change): `upload-asset <file>` uploads it and prints `embed_html` — splice that string directly into the HTML you pass to `add-comment`/`update-description`/`append-description`/`prepend-description`.
 
 > **CRITICAL — `set-branch` and `set-pr` ALREADY post a comment.** Each updates the description **and** posts a comment in a single call. Call each **exactly once** and then **STOP** — do **NOT** follow it with any `add-comment` carrying the same branch/PR link, the commit message, or a "PR is ready" note. The comment is already there. A second `add-comment` is a duplicate and is forbidden.
 >
@@ -50,7 +58,7 @@ GitHub operations go through `docs/github.sh` (wraps `gh`):
 docs/github.sh pr-number <branch>            # PR number for a branch ("" if none)
 docs/github.sh pr-url <branch>               # PR html URL for a branch ("" if none)
 docs/github.sh pr-state <branch>             # OPEN | MERGED | CLOSED | NONE
-docs/github.sh tests-status <branch>         # test check only: SUCCESS | FAILURE | PENDING | NONE
+docs/github.sh tests-status <branch>         # configured CI checks only: SUCCESS | FAILURE | PENDING | NONE
 docs/github.sh unresolved-threads <branch>   # unresolved review threads as JSON [{id, body}]
 docs/github.sh resolve-thread <thread_id>    # mark a review thread resolved
 docs/github.sh create-pr <base> <head> <title> <body>   # create a PR, prints its URL
@@ -67,7 +75,7 @@ The task is in the `## Your task` JSON appended to this prompt. It is **already 
 - `name` — task title
 - `description_html` — description (HTML)
 - `priority`
-- `comments` — array of `{id, body, created_at}` (may be empty)
+- `comments` — array of `{id, body, images, created_at}` (may be empty); `images` lists any embedded image asset ids (see *Images in comments/descriptions* above)
 
 ### 0.1. Sync comments to description checklist
 
@@ -170,7 +178,7 @@ CURRENT_HTML=$(docs/plane.sh get-issue <id> | jq -r '.description_html // ""')
 printf '<hr/><p><strong>Investigation:</strong></p><p>…</p><p><strong>Checklist:</strong></p><p>[ ] subtask 1</p><p>[ ] subtask 2</p>' | docs/plane.sh append-description <id>
 ```
 
-If questions surface during investigation, **post them as a comment** and stop:
+If questions surface during investigation, post them as a comment and stop — this "post and stop" pattern (comment, then emit the completion signal, nothing else) recurs at every stopping point below:
 ```bash
 docs/plane.sh add-comment <id> "<p>Question: …</p>"
 ```
@@ -180,23 +188,16 @@ docs/plane.sh add-comment <id> "<p>Question: …</p>"
 
 If no questions, continue to implementation using the checklist you just wrote.
 
-3.2.1. **If the task is purely technical** (names a class/method/file/config to change without business context) and investigation reveals missing context needed to implement correctly (unclear API contract, unknown callers, undescribed integration point), post the specific blockers as a comment and stop:
+3.2.1. **If the task is purely technical** (names a class/method/file/config to change without business context) and investigation reveals missing context needed to implement correctly (unclear API contract, unknown callers, undescribed integration point), post the specific blockers as a comment and stop the same way as 3.2:
 
 ```bash
 docs/plane.sh add-comment <id> "<p>Technical blockers:</p><ul><li>…</li></ul>"
 ```
-```
-<promise>TASK_DONE</promise>
-```
 
 3.3. Investigate the relevant code (if not done in 3.2).
-3.4. If questions arise before writing code, post them as a comment and stop with `<promise>TASK_DONE</promise>`.
+3.4. If questions arise before writing code, post them as a comment and stop the same way.
 3.5. Implement following all project rules in `CLAUDE.md`. After each checklist item, mark it done in the description (step 0.1 #3).
 3.6. Add or update tests for changed functionality.
-
-### 3.7. Investigate production errors via Elasticsearch (logs)
-
-Not applicable — this project has no Elasticsearch log pipeline.
 
 ### 4. Run tests and quality gates
 
@@ -244,15 +245,7 @@ PR_URL=$(docs/github.sh create-pr main <branch> "<task name>" "Plane task: <sequ
 docs/plane.sh set-pr <id> "$PR_URL"
 ```
 
-`set-pr` appends the PR link to the description **and** posts a comment — that is the **single, complete** command for recording the PR. After it runs, recording the PR is **done**.
-
-> **Do NOT** add any further comment about the PR — no `add-comment` with the PR link, the commit message, or a "ready for review" note. `set-pr` already posted the comment; anything more is a duplicate. Two commands only at this step:
-> ```bash
-> PR_URL=$(docs/github.sh create-pr main <branch> "<task name>" "Plane task: <sequence_id>")
-> docs/plane.sh set-pr <id> "$PR_URL"   # ← last PR-related command; STOP here
-> ```
-
-> The loop calls `set-review` automatically after the iteration — do not call it.
+`set-pr` posts the comment too (see the CRITICAL note under *Plane API Helper*) — recording the PR is **done** after this call; do not follow it with another `add-comment` about the PR.
 
 ### 7. Post-task analysis
 
@@ -268,23 +261,10 @@ No project-specific cleanup required.
 
 ### 9. Signal completion
 
-Output:
+Emit the completion signal to end the iteration — the loop posts stats, moves the task to Review, and picks the next task. The task moves to Review either way, but only this signal starts a fresh session for the next one:
 ```
 <promise>TASK_DONE</promise>
 ```
-
-## General rules
-
-- **When mentioning code in comments/descriptions, link to it on GitHub** using HTML anchors and full permalinks:
-  `<a href="https://github.com/sgavka/clickupython/blob/<branch>/<path>#L<line>">UserService.handle()</a>`
-
-## Signals
-
-| Signal | Meaning |
-|--------|---------|
-| `<promise>TASK_DONE</promise>` | Iteration complete — loop posts stats, moves the task to Review, picks the next task |
-
-The loop moves the task to **Review** at the end of the iteration **whether or not** you emit `TASK_DONE`. Emit `TASK_DONE` to start a fresh session for the next task.
 
 ## Commit rules
 
