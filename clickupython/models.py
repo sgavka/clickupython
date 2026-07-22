@@ -373,7 +373,9 @@ class CustomField(BaseModel):
     type_config: TypeConfig = None
     date_created: str = None
     hide_from_guests: bool = None
-    value: Optional[Union[str, int, dict, list[CustomFieldValue], list[CustomFieldValueSecond]]] = None
+    value: Optional[
+        Union[str, int, dict, list[CustomFieldValue], list[CustomFieldValueSecond], list[Asssignee]]
+    ] = None
     value_richtext: Optional[str] = None
     required: Optional[bool] = None
 
