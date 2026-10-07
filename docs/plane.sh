@@ -640,8 +640,8 @@ _task_overrides() {
         fields=$(_all_custom_fields "$pid") || return 1
     fi
     out=$(printf '%s' "$values" | jq -c --argjson fields "$fields" '
-        def val($n): (.[] | select(.name == $n)) as $f
-            | if $f.value == null then null
+        def val($n): ([.[] | select(.name == $n)][0]) as $f
+            | if $f == null or $f.value == null then null
               elif $f.field_type == "select" then ($fields.results[] | select(.id == $f.custom_field) | .options[] | select(.id == $f.value) | .name) // null
               else $f.value end;
         {model: val("model"), effort: val("effort"), session_id: val("session_id"), re_check_after: val("re_check_after")}
