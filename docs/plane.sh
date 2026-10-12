@@ -607,9 +607,16 @@ _RECHECK_JQ='
 # Fetch an issue by id and append its comments, as next-task/task-in-progress
 # both return it. Kept separate from cmd_get_issue so the two selection paths
 # stay one function call away from the exact response shape the loop injects.
+#
+# Comments go through a temp file + --rawfile/fromjson, not --argjson on the
+# command line, for the same MAX_ARG_STRLEN reason as _jq_with_desc above —
+# a task with a long PR-review-comment history can carry well over 128 KiB
+# of comments (confirmed live, Plane task #2479: 336 KiB on a single issue),
+# which made plain `--argjson comments "$comments"` fail with "Argument list
+# too long" and next-task return nothing at all for that issue.
 _issue_with_comments() {
     local pid="$1" issue_id="$2"
-    local comments
+    local comments comments_tmp
     comments=$(_curl "$BASE/projects/$pid/issues/$issue_id/comments/" \
         | jq '[.results[] | {
             id,
@@ -618,9 +625,12 @@ _issue_with_comments() {
             created_at
         }] | sort_by(.created_at)')
 
+    comments_tmp=$(mktemp)
+    trap 'rm -f "$comments_tmp"' RETURN
+    printf '%s' "$comments" > "$comments_tmp"
     _curl "$BASE/projects/$pid/issues/$issue_id/" | jq \
-        --argjson comments "$comments" \
-        ". + {comments: \$comments} | $_STRIP_NOISE"
+        --rawfile comments_raw "$comments_tmp" \
+        ". + {comments: (\$comments_raw | fromjson)} | $_STRIP_NOISE"
 }
 
 # The per-task overrides Plane custom fields can carry, read by ralph and by
@@ -712,11 +722,28 @@ cmd_next_task() {
         return
     fi
 
-    local resolved_ids resolved_review_ids seq_to_state
+    local resolved_ids resolved_review_ids
     resolved_ids=$(echo "$states" | jq -c '[.results[] | select(.group == "completed" or .group == "cancelled") | .id]')
     resolved_review_ids=$(echo "$states" | jq -c '[.results[] | select(.group == "completed" or .group == "cancelled" or (.name | test("review"; "i"))) | .id]')
-    seq_to_state=$(jq -c '[.results[] | {(.sequence_id | tostring): .state}] | add // {}' "$issues_tmp")
     rm -f "$issues_tmp"
+
+    # The seqmap for resolving "Blocked by: #<seq>" references must see every
+    # issue's state project-wide, not just the Todo-state/label-matching
+    # candidates fetched above for candidate_ids — a real blocker is almost
+    # always sitting in Backlog, In Progress, Review or Done, never Todo, so
+    # building this map from the Todo-scoped fetch made every live blocker
+    # invisible to it, and _BLOCKER_JQ's "reference not found -> fails open"
+    # branch (meant for a stale/typo'd sequence id) silently treated every
+    # real blocker the same way. Confirmed live (task #2479): a medium-priority
+    # task blocked on a Backlog item was wrongly picked over an eligible
+    # lower-priority task because of exactly this. Mirrors list-blocked's
+    # existing unfiltered seqmap fetch below, kept lean (state only, no
+    # labels/priority/description) since this runs on every next-task call.
+    local seqmap_tmp seq_to_state
+    seqmap_tmp=$(mktemp)
+    _all_issues "$pid" "id,sequence_id,state" > "$seqmap_tmp"
+    seq_to_state=$(jq -c '[.results[] | {(.sequence_id | tostring): .state}] | add // {}' "$seqmap_tmp")
+    rm -f "$seqmap_tmp"
 
     local today
     # Kyiv wall time, same clock the Recheck-after: description convention is written in.
