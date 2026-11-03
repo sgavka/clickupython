@@ -73,3 +73,29 @@ class TestClientAddTaskLink(unittest.TestCase):
         # Verify the correct URL was called
         args, kwargs = mock_post.call_args
         self.assertIn(f"task/{task_id}/link/{links_to}", args[0])
+
+
+class TestClientDeleteTaskLink(unittest.TestCase):
+    @patch('requests.delete')
+    def test_delete_task_link(self, mock_delete: MagicMock):
+        # Arrange
+        task_id = "task123"
+        links_to = "task456"
+
+        mock_response_data = {
+            "task": load_asset('get_task_000000000_response')
+        }
+        mock_delete.return_value = mock_response_with_json(mock_response_data)
+
+        client = ClickUpClient(token="fake_api_key")
+
+        # Act
+        result = client.delete_task_link(task_id=task_id, links_to=links_to)
+
+        # Assert
+        self.assertTrue(result)
+        mock_delete.assert_called_once()
+
+        # Verify the correct URL was called
+        args, kwargs = mock_delete.call_args
+        self.assertIn(f"task/{task_id}/link/{links_to}", args[0])

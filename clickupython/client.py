@@ -832,6 +832,13 @@ class ClickUpClient:
 
         return True
 
+    def delete_task_link(self, task_id: str, links_to: str) -> bool:
+        uri = f"task/{task_id}/link/{links_to}"
+
+        self.__delete_request(uri)
+
+        return True
+
     # Comments
     def get_task_comments(self, task_id: str) -> Optional[models.Comments]:
         uri = f"task/{task_id}/comment"
